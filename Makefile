@@ -21,4 +21,4 @@ docker-push: ## Push docker image with the manager.
 	QUAY_USER=$(ORG) yarn img-push
 
 ##@ Deployment
-release-push: docker-push  ## Push operator docker, bundle, catalog images
+release-push: docker-push  ## Push dynamic plugin image
