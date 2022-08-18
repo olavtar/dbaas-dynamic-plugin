@@ -9,17 +9,16 @@ CONTAINER_ENGINE?=docker
 
 # ORG indicates the organization that docker images will be build for & pushed to
 # CHANGE THIS TO YOUR OWN QUAY USERNAME FOR DEV/TESTING/PUSHING
-USER ?= ecosystem-appeng
+ORG ?= ecosystem-appeng
 
 ##@ Build Deploy
 release-build: docker-build   ## Build dynamic plugin image
 
 docker-build: ## Build docker image with the manager.
- 	QUAY_USER=$(USER) yarn img-build
+	QUAY_USER=$(ORG) yarn img-build
 
 docker-push: ## Push docker image with the manager.
- 	QUAY_USER=$(USER) yarn img-push
+	QUAY_USER=$(ORG) yarn img-push
 
 ##@ Deployment
-
 release-push: docker-push  ## Push operator docker, bundle, catalog images
