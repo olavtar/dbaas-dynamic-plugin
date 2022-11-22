@@ -21,6 +21,12 @@ import {
   HelperText,
   Form,
   Popover,
+  ToggleGroup,
+  ToggleGroupItem,
+  Accordion,
+  AccordionItem,
+  AccordionToggle,
+  AccordionContent,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
 import FormHeader from './form/formHeader'
@@ -32,6 +38,7 @@ import {
   rdsProviderType,
   DBaaSOperatorName,
   rdsEngineTypeDocUrl,
+  cockroachdbProviderType,
 } from '../const'
 import {
   getCSRFToken,
@@ -100,6 +107,9 @@ const SuccessView = ({ goToInstancesPage }) => {
 }
 
 const ProviderClusterProvisionPage = () => {
+  const [isSelected, setSelectedPlan] = React.useState('')
+  const [isSelectedCP, setSelectedCP] = React.useState('')
+  const [expanded, setExpanded] = React.useState(['ex2-toggle4'])
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
   const [selectedDBProvider, setSelectedDBProvider] = React.useState({})
@@ -479,6 +489,25 @@ const ProviderClusterProvisionPage = () => {
       })
   }
 
+  const toggle = (id) => {
+    const index = expanded.indexOf(id)
+    const newExpanded =
+      index >= 0 ? [...expanded.slice(0, index), ...expanded.slice(index + 1, expanded.length)] : [...expanded, id]
+    setExpanded(newExpanded)
+  }
+
+  const handleItemClick = (isSelected, event) => {
+    console.log('handleItemClick')
+    console.log(event.currentTarget.id)
+    setSelectedPlan(event.currentTarget.id)
+  }
+
+  const handleCPClick = (isSelectedCP, event) => {
+    console.log('handleCPClick')
+    console.log(event.currentTarget.id)
+    setSelectedCP(event.currentTarget.id)
+  }
+
   const setDBProviderFields = () => {
     if (selectedDBProvider.value === mongoProviderType) {
       return (
@@ -575,6 +604,85 @@ const ProviderClusterProvisionPage = () => {
               </HelperTextItem>
             </HelperText>
           </FormGroup>
+        </>
+      )
+    }
+    if (selectedDBProvider.value === cockroachdbProviderType) {
+      const accordionData = [
+        {
+          id: 1,
+          title: 'Regions',
+          content: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry',
+        },
+        {
+          id: 2,
+          title: 'Spent Limit',
+          content: 'Contrary to popular belief, Lorem Ipsum is not simply random text',
+        },
+        {
+          id: 3,
+          title: 'Cluster Name',
+          ans: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout',
+        },
+      ]
+
+      return (
+        <>
+          <FormGroup
+            label="Choose a plan"
+            fieldId="plan"
+            isRequired
+            className="half-width-selection"
+            helperTextInvalid="This is a required field"
+            validated={isProjectNameFieldValid}
+          >
+            <ToggleGroup aria-label="Default with single selectable">
+              <ToggleGroupItem
+                text="Serverless"
+                buttonId="serverless"
+                isSelected={isSelected === 'serverless'}
+                onChange={handleItemClick}
+              />
+              <ToggleGroupItem
+                text="Dedicated"
+                buttonId="dedicated"
+                isSelected={isSelected === 'dedicated'}
+                onChange={handleItemClick}
+              />
+            </ToggleGroup>
+          </FormGroup>
+
+          <FormGroup
+            label="Cloud Provider"
+            fieldId="cloudprovider"
+            isRequired
+            className="half-width-selection"
+            helperTextInvalid="This is a required field"
+            validated={isProjectNameFieldValid}
+          >
+            <ToggleGroup aria-label="Default with single selectable">
+              <ToggleGroupItem
+                text="Google Cloud"
+                buttonId="gcp"
+                isSelected={isSelectedCP === 'gcp'}
+                onChange={handleCPClick}
+              />
+              <ToggleGroupItem text="AWS" buttonId="aws" isSelected={isSelectedCP === 'aws'} onChange={handleCPClick} />
+            </ToggleGroup>
+          </FormGroup>
+
+          <Accordion isBordered asDefinitionList={false} className="half-width-selection">
+            {accordionData.map((item, index) => (
+              <AccordionItem index={index}>
+                <AccordionToggle onClick={() => toggle(item.id)} isExpanded={expanded.includes(item.id)} id={item.id}>
+                  {item.title}
+                </AccordionToggle>
+                <AccordionContent id={item.id} isHidden={!expanded.includes(item.id)} isFixed>
+                  <p>{item.content}</p>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </>
       )
     }
