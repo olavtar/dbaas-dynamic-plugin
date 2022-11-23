@@ -27,6 +27,8 @@ import {
   AccordionItem,
   AccordionToggle,
   AccordionContent,
+  FormFieldGroup,
+  FormFieldGroupHeader,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
 import FormHeader from './form/formHeader'
@@ -107,8 +109,11 @@ const SuccessView = ({ goToInstancesPage }) => {
 }
 
 const ProviderClusterProvisionPage = () => {
-  const [isSelected, setSelectedPlan] = React.useState('')
+  const [pricingPlan, setPricingPlan] = React.useState('serverless')
   const [isSelectedCP, setSelectedCP] = React.useState('')
+  const [region, setRegion] = React.useState('')
+  const [cloudProvider, setCloudProvider] = React.useState('')
+
   const [expanded, setExpanded] = React.useState(['ex2-toggle4'])
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
@@ -118,6 +123,7 @@ const ProviderClusterProvisionPage = () => {
   const [selectedInventory, setSelectedInventory] = React.useState({})
   const [clusterName, setClusterName] = React.useState('')
   const [projectName, setProjectName] = React.useState('')
+
   const [engine, setEngine] = React.useState('')
   const [statusMsg, setStatusMsg] = React.useState('')
   const [inventoryHasIssue, setInventoryHasIssue] = React.useState(false)
@@ -143,6 +149,23 @@ const ProviderClusterProvisionPage = () => {
     { value: 'mysql', label: 'MySQL', disabled: false },
     { value: 'postgres', label: 'PostgreSQL', disabled: false },
   ]
+  const cpOptions = [
+    { value: '', label: 'Select one', disabled: true, isPlaceholder: true },
+    { value: 'gcp', label: 'Google Cloud', disabled: false },
+    { value: 'aws', label: 'AWS', disabled: false },
+  ]
+  const regionsOptions = [
+    { value: '', label: 'Select one', disabled: true, isPlaceholder: true },
+    { value: 'california', label: 'California', disabled: false },
+    { value: 'sao paulo', label: 'Sao Paulo', disabled: false },
+    { value: 'iowa', label: 'Iowa', disabled: false },
+  ]
+  const pricingOptions = [
+    { value: '', label: 'Select one', disabled: true, isPlaceholder: true },
+    { value: 'serverless', label: 'Serverless', disabled: false },
+    { value: 'dedicated', label: 'Dedicated', disabled: false },
+  ]
+
   const checkInventoryStatus = (inventory) => {
     if (inventory?.status?.conditions[0]?.type === 'SpecSynced') {
       if (inventory?.status?.conditions[0]?.status === 'False') {
@@ -163,6 +186,9 @@ const ProviderClusterProvisionPage = () => {
       let provider = _.find(providerList, (dbProvider) => {
         return dbProvider.value === devSelectedDBProviderName
       })
+      console.log('detectSelectedDBProviderAndProviderAccount')
+      console.log('provider')
+      console.log(provider)
       setSelectedDBProvider(provider)
       filterInventoriesByProvider(provider)
       setIsDBProviderFieldValid(ValidatedOptions.default)
@@ -172,6 +198,8 @@ const ProviderClusterProvisionPage = () => {
       let inventory = inventories.forEach((inv) => {
         if (inv.name === devSelectedProviderAccountName) {
           checkInventoryStatus(inv)
+          console.log('inventory')
+          console.log(inventory)
           setSelectedInventory(inv)
           setIsInventoryFieldValid(ValidatedOptions.default)
         }
@@ -439,6 +467,8 @@ const ProviderClusterProvisionPage = () => {
       return inv.name === value
     })
     checkInventoryStatus(inventory)
+    console.log('handleInventorySelection')
+    console.log(inventory)
     setSelectedInventory(inventory)
   }
 
@@ -496,16 +526,41 @@ const ProviderClusterProvisionPage = () => {
     setExpanded(newExpanded)
   }
 
-  const handleItemClick = (isSelected, event) => {
-    console.log('handleItemClick')
-    console.log(event.currentTarget.id)
-    setSelectedPlan(event.currentTarget.id)
+  const handlePricingChange = (value) => {
+    setPricingPlan(value)
   }
 
   const handleCPClick = (isSelectedCP, event) => {
     console.log('handleCPClick')
     console.log(event.currentTarget.id)
     setSelectedCP(event.currentTarget.id)
+  }
+
+  const handleRegionChange = (value) => {
+    setRegion(value)
+  }
+
+  const buildComponents = (item) => {
+    console.log('buildComponents')
+    console.log(item)
+    const regionOptions = item.content
+    console.log(regionOptions)
+    if (item.Control === 'dropdown') {
+      return (
+        <FormGroup label="Region" fieldId="region" className="provider-account-selection">
+          <FormSelect value={region} onChange={handleRegionChange} aria-label="Region" id="region">
+            {regionOptions.map((option, index) => (
+              <FormSelectOption isDisabled={option.disabled} key={index} value={option.value} label={option.label} />
+            ))}
+          </FormSelect>
+        </FormGroup>
+      )
+    }
+    return <p>{item.content}</p>
+  }
+
+  const handleCPChange = (value) => {
+    setCloudProvider(value)
   }
 
   const setDBProviderFields = () => {
@@ -608,23 +663,37 @@ const ProviderClusterProvisionPage = () => {
       )
     }
     if (selectedDBProvider.value === cockroachdbProviderType) {
-      const accordionData = [
-        {
-          id: 1,
-          title: 'Regions',
-          content: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry',
-        },
-        {
-          id: 2,
-          title: 'Spent Limit',
-          content: 'Contrary to popular belief, Lorem Ipsum is not simply random text',
-        },
-        {
-          id: 3,
-          title: 'Cluster Name',
-          ans: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout',
-        },
-      ]
+      // const accordionData = [
+      //   {
+      //     id: 1,
+      //     title: 'Regions',
+      //     Control: 'dropdown',
+      //     content: [
+      //       { value: '', label: 'Select one', disabled: true, isPlaceholder: true },
+      //       { value: 'california', label: 'California', disabled: false },
+      //       { value: 'oregon', label: 'Oregon', disabled: false },
+      //       { value: 'nevada', label: 'Nevada', disabled: false },
+      //     ],
+      //   },
+      //   {
+      //     id: 2,
+      //     title: 'Spent Limit',
+      //     Control: 'dropdown',
+      //     content: [
+      //       { value: '', label: 'Select one', disabled: true, isPlaceholder: true },
+      //       { value: 'california', label: 'California', disabled: false },
+      //       { value: 'oregon', label: 'Oregon', disabled: false },
+      //       { value: 'nevada', label: 'Nevada', disabled: false },
+      //     ],
+      //   },
+      //   {
+      //     id: 3,
+      //     title: 'Cluster Name',
+      //     Control: 'string',
+      //     content:
+      //       'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout',
+      //   },
+      // ]
 
       return (
         <>
@@ -636,20 +705,17 @@ const ProviderClusterProvisionPage = () => {
             helperTextInvalid="This is a required field"
             validated={isProjectNameFieldValid}
           >
-            <ToggleGroup aria-label="Default with single selectable">
-              <ToggleGroupItem
-                text="Serverless"
-                buttonId="serverless"
-                isSelected={isSelected === 'serverless'}
-                onChange={handleItemClick}
-              />
-              <ToggleGroupItem
-                text="Dedicated"
-                buttonId="dedicated"
-                isSelected={isSelected === 'dedicated'}
-                onChange={handleItemClick}
-              />
-            </ToggleGroup>
+            <FormSelect
+              isRequired
+              value={pricingPlan}
+              onChange={handlePricingChange}
+              aria-label="cloudprovider"
+              //   validated={isEngineFieldValid}
+            >
+              {pricingOptions.map((option, index) => (
+                <FormSelectOption isDisabled={option.disabled} key={index} value={option.value} label={option.label} />
+              ))}
+            </FormSelect>
           </FormGroup>
 
           <FormGroup
@@ -658,31 +724,204 @@ const ProviderClusterProvisionPage = () => {
             isRequired
             className="half-width-selection"
             helperTextInvalid="This is a required field"
-            validated={isProjectNameFieldValid}
+            // validated={isEngineFieldValid}
           >
-            <ToggleGroup aria-label="Default with single selectable">
-              <ToggleGroupItem
-                text="Google Cloud"
-                buttonId="gcp"
-                isSelected={isSelectedCP === 'gcp'}
-                onChange={handleCPClick}
-              />
-              <ToggleGroupItem text="AWS" buttonId="aws" isSelected={isSelectedCP === 'aws'} onChange={handleCPClick} />
-            </ToggleGroup>
+            <FormSelect
+              isRequired
+              value={cloudProvider}
+              onChange={handleCPChange}
+              aria-label="cloudprovider"
+              //   validated={isEngineFieldValid}
+            >
+              {cpOptions.map((option, index) => (
+                <FormSelectOption isDisabled={option.disabled} key={index} value={option.value} label={option.label} />
+              ))}
+            </FormSelect>
           </FormGroup>
 
-          <Accordion isBordered asDefinitionList={false} className="half-width-selection">
-            {accordionData.map((item, index) => (
-              <AccordionItem index={index}>
-                <AccordionToggle onClick={() => toggle(item.id)} isExpanded={expanded.includes(item.id)} id={item.id}>
-                  {item.title}
-                </AccordionToggle>
-                <AccordionContent id={item.id} isHidden={!expanded.includes(item.id)} isFixed>
-                  <p>{item.content}</p>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {pricingPlan === 'serverless' ? (
+            <>
+              <FormGroup
+                label="Regions"
+                fieldId="regions"
+                isRequired
+                className="half-width-selection"
+                helperTextInvalid="This is a required field"
+                // validated={isEngineFieldValid}
+              >
+                <FormSelect
+                  isRequired
+                  value={region}
+                  onChange={handleRegionChange}
+                  aria-label="regions"
+                  //   validated={isEngineFieldValid}
+                >
+                  {regionsOptions.map((option, index) => (
+                    <FormSelectOption
+                      isDisabled={option.disabled}
+                      key={index}
+                      value={option.value}
+                      label={option.label}
+                    />
+                  ))}
+                </FormSelect>
+              </FormGroup>
+
+              <FormGroup
+                label="Spend Limit"
+                fieldId="spend-limit"
+                isRequired
+                className="half-width-selection"
+                helperTextInvalid="This is a required field"
+                //   validated={isInstanceNameFieldValid}
+              >
+                <TextInput
+                  isRequired
+                  type="text"
+                  id="spend-limit"
+                  name="spend-limit"
+                  value={clusterName}
+                  onChange={handleInstanceNameChange}
+                  //   validated={isInstanceNameFieldValid}
+                />
+              </FormGroup>
+            </>
+          ) : (
+            <>
+              <FormFieldGroup
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{ text: 'Regions & Nodes', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Region"
+                  fieldId="regions-nodes"
+                  isRequired
+                  className="half-width-selection"
+                  helperTextInvalid="This is a required field"
+                  // validated={isEngineFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region}
+                    onChange={handleRegionChange}
+                    aria-label="regions-nodes"
+                    //   validated={isEngineFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption
+                        isDisabled={option.disabled}
+                        key={index}
+                        value={option.value}
+                        label={option.label}
+                      />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup
+                  label="Nodes"
+                  fieldId="regions-nodes"
+                  isRequired
+                  className="half-width-selection"
+                  helperTextInvalid="This is a required field"
+                  // validated={isEngineFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region}
+                    onChange={handleRegionChange}
+                    aria-label="regions-nodes"
+                    //   validated={isEngineFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption
+                        isDisabled={option.disabled}
+                        key={index}
+                        value={option.value}
+                        label={option.label}
+                      />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+              <FormFieldGroup
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{ text: 'Hardware per node', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Compute"
+                  fieldId="hardware"
+                  isRequired
+                  className="half-width-selection"
+                  helperTextInvalid="This is a required field"
+                  // validated={isEngineFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region}
+                    onChange={handleRegionChange}
+                    aria-label="hardware"
+                    //   validated={isEngineFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption
+                        isDisabled={option.disabled}
+                        key={index}
+                        value={option.value}
+                        label={option.label}
+                      />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup
+                  label="Storage"
+                  fieldId="hardware"
+                  isRequired
+                  className="half-width-selection"
+                  helperTextInvalid="This is a required field"
+                  // validated={isEngineFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region}
+                    onChange={handleRegionChange}
+                    aria-label="regions-nodes"
+                    //   validated={isEngineFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption
+                        isDisabled={option.disabled}
+                        key={index}
+                        value={option.value}
+                        label={option.label}
+                      />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+            </>
+          )}
+
+          {/* <Accordion isBordered asDefinitionList={false} className="half-width-selection"> */}
+          {/*   {accordionData.map((item, index) => ( */}
+          {/*     <AccordionItem index={index}> */}
+          {/*       <AccordionToggle onClick={() => toggle(item.id)} isExpanded={expanded.includes(item.id)} id={item.id}> */}
+          {/*         {item.title} */}
+          {/*       </AccordionToggle> */}
+          {/*       <AccordionContent id={item.id} isHidden={!expanded.includes(item.id)} isFixed> */}
+          {/*         {buildComponents(item)} */}
+          {/*         /!* <p>{item.content}</p> *!/ */}
+          {/*       </AccordionContent> */}
+          {/*     </AccordionItem> */}
+          {/*   ))} */}
+          {/* </Accordion> */}
         </>
       )
     }
