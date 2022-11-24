@@ -109,7 +109,9 @@ const SuccessView = ({ goToInstancesPage }) => {
 }
 
 const ProviderClusterProvisionPage = () => {
-  const [pricingPlan, setPricingPlan] = React.useState('serverless')
+  const [plan, setPlan] = React.useState('Serverless')
+  const [planOptions, setPlanOptions] = React.useState([])
+
   const [isSelectedCP, setSelectedCP] = React.useState('')
   const [region, setRegion] = React.useState('')
   const [cloudProvider, setCloudProvider] = React.useState('')
@@ -186,9 +188,6 @@ const ProviderClusterProvisionPage = () => {
       let provider = _.find(providerList, (dbProvider) => {
         return dbProvider.value === devSelectedDBProviderName
       })
-      console.log('detectSelectedDBProviderAndProviderAccount')
-      console.log('provider')
-      console.log(provider)
       setSelectedDBProvider(provider)
       filterInventoriesByProvider(provider)
       setIsDBProviderFieldValid(ValidatedOptions.default)
@@ -198,8 +197,6 @@ const ProviderClusterProvisionPage = () => {
       let inventory = inventories.forEach((inv) => {
         if (inv.name === devSelectedProviderAccountName) {
           checkInventoryStatus(inv)
-          console.log('inventory')
-          console.log(inventory)
           setSelectedInventory(inv)
           setIsInventoryFieldValid(ValidatedOptions.default)
         }
@@ -467,9 +464,15 @@ const ProviderClusterProvisionPage = () => {
       return inv.name === value
     })
     checkInventoryStatus(inventory)
-    console.log('handleInventorySelection')
-    console.log(inventory)
     setSelectedInventory(inventory)
+  }
+
+  const setProviderData = (providerData) => {
+    console.log('setPlanOptions')
+    const result = providerData.find((item) => item.param === 'plan')
+    console.log(result)
+    console.log(result.data)
+    setPlanOptions(result.data)
   }
 
   const handleDBProviderSelection = (value) => {
@@ -483,7 +486,11 @@ const ProviderClusterProvisionPage = () => {
         return dbProvider.value === value
       })
       setInventoryHasIssue(false)
+      console.log('handleDBProviderSelection')
+      console.log('provider')
+      console.log(provider)
       setSelectedDBProvider(provider)
+      setProviderData(provider.providerData)
       filterInventoriesByProvider(provider)
     }
   }
@@ -502,6 +509,7 @@ const ProviderClusterProvisionPage = () => {
       .then((data) => {
         let dbProviderList = []
         data.items?.forEach((dbProvider) => {
+          console.log(dbProvider)
           dbProviderList.push({
             value: dbProvider?.metadata?.name,
             label: dbProvider?.spec?.provider?.displayName,
@@ -510,6 +518,8 @@ const ProviderClusterProvisionPage = () => {
               url: dbProvider?.spec?.externalProvisionURL,
               desc: dbProvider?.spec?.externalProvisionDescription,
             },
+            providerData: dbProvider?.status?.providerData,
+            defaultData: dbProvider?.spec?.instanceParameterSpecs,
           })
         })
         setProviderList(providerList.concat(dbProviderList))
@@ -527,7 +537,8 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handlePricingChange = (value) => {
-    setPricingPlan(value)
+    console.log(value)
+    setPlan(value)
   }
 
   const handleCPClick = (isSelectedCP, event) => {
@@ -707,13 +718,13 @@ const ProviderClusterProvisionPage = () => {
           >
             <FormSelect
               isRequired
-              value={pricingPlan}
+              value={plan}
               onChange={handlePricingChange}
               aria-label="cloudprovider"
               //   validated={isEngineFieldValid}
             >
-              {pricingOptions.map((option, index) => (
-                <FormSelectOption isDisabled={option.disabled} key={index} value={option.value} label={option.label} />
+              {planOptions.map((option, index) => (
+                <FormSelectOption key={index} value={option.value} label={option.value} />
               ))}
             </FormSelect>
           </FormGroup>
@@ -739,7 +750,7 @@ const ProviderClusterProvisionPage = () => {
             </FormSelect>
           </FormGroup>
 
-          {pricingPlan === 'serverless' ? (
+          {plan === 'Serverless' ? (
             <>
               <FormGroup
                 label="Regions"
