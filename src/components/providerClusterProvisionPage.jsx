@@ -112,6 +112,7 @@ const SuccessView = ({ goToInstancesPage }) => {
 const ProviderClusterProvisionPage = () => {
   const [plan, setPlan] = React.useState([])
   const [planOptions, setPlanOptions] = React.useState([])
+  const [isPlanFieldValid, setIsPlanFieldValid] = React.useState('')
   const [cloudProvider, setCloudProvider] = React.useState([])
   const [cpOptions, setCpOptions] = React.useState([])
   const [region, setRegion] = React.useState([])
@@ -120,11 +121,16 @@ const ProviderClusterProvisionPage = () => {
   const [spendLimit, setSpendLimit] = React.useState('0')
   const [isSpendLimitFieldValid, setIsSpendLimitFieldValid] = React.useState('')
   const [isRegionFieldValid, setIsRegionFieldValid] = React.useState('')
-  const [isPlanFieldValid, setIsPlanFieldValid] = React.useState('')
   const [isCloudProviderFieldValid, setIsCloudProviderFieldValid] = React.useState('')
   const [nodes, setNodes] = React.useState([])
   const [nodesOptions, setNodesOptions] = React.useState([])
   const [isNodesFieldValid, setIsNodesFieldValid] = React.useState('')
+  const [compute, setCompute] = React.useState([])
+  const [computeOptions, setComputeOptions] = React.useState([])
+  const [isComputeFieldValid, setIsComputeFieldValid] = React.useState('')
+  const [storage, setStorage] = React.useState([])
+  const [storageOptions, setStorageOptions] = React.useState([])
+  const [isStorageFieldValid, setIsStorageFieldValid] = React.useState('')
 
   const [expanded, setExpanded] = React.useState(['ex2-toggle4'])
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
@@ -283,6 +289,15 @@ const ProviderClusterProvisionPage = () => {
       otherInstanceParams = { projectName: projectName }
     } else if (selectedDBProvider.value === rdsProviderType) {
       otherInstanceParams = { Engine: engine.value }
+    } else if (selectedDBProvider.value === cockroachdbProviderType) {
+      otherInstanceParams = {
+        plan: plan.key,
+        region: region.key,
+        nodes: nodes.key,
+        machine_type: compute.key,
+        storage_gib: storage.key,
+        spend_limit: spendLimit.key,
+      }
     }
 
     let requestOpts = {
@@ -420,9 +435,13 @@ const ProviderClusterProvisionPage = () => {
       isValid =
         isValid &&
         isPlanFieldValid === ValidatedOptions.default &&
-        isCloudProviderFieldValid === ValidatedOptions.default &&
-        isRegionFieldValid === ValidatedOptions.default &&
-        isSpendLimitFieldValid === ValidatedOptions.default
+        isCloudProviderFieldValid === ValidatedOptions.default
+      //   &&
+      // isRegionFieldValid === ValidatedOptions.default &&
+      // isComputeFieldValid === ValidatedOptions.default &&
+      // isNodesFieldValid === ValidatedOptions.default &&
+      // isStorageFieldValid === ValidatedOptions.default &&
+      // isSpendLimitFieldValid === ValidatedOptions.default;
       console.log(isValid)
     }
     setIsFormValid(isValid)
@@ -486,8 +505,8 @@ const ProviderClusterProvisionPage = () => {
     return regionsList
   }
 
-  const setProviderData = (providerData, defaultData) => {
-    console.log('setProviderData')
+  const setDefaultProviderData = (providerData, defaultData) => {
+    console.log('setDefaultProviderData')
     // setting plan options
     const resultPlan = providerData.find((item) => item.param === 'plan')
     setPlanOptions(resultPlan.data)
@@ -504,25 +523,8 @@ const ProviderClusterProvisionPage = () => {
     const defaultCPData = defaultData.find((item) => item.name === 'cloud_provider')
     const defaultCP = resultCP.data.find((item) => item.key === defaultCPData.defaultValue)
     setCloudProvider(defaultCP)
-
-    console.log('Regions')
-    let resultRegions = providerData.filter((item) => item.param === 'regions')
-    console.log(resultRegions)
-    // set initial selections into the map
-    selections.set('cloud_provider', defaultCP.key)
-    selections.set('plan', defaultPlan.key)
-    // set regions options based on selections
-    resultRegions = filterSelected(resultRegions)
-    console.log(resultRegions)
-    setRegionsOptions(resultRegions.data)
-    // set default region based on selections
-    setRegion(resultRegions.data[0])
-
-    // const resultNodes = providerData.find((item) => item.param === 'nodes')
-    // setNodesOptions(resultNodes.data)
-    // const defaultNodesData = defaultData.find((item) => item.name === 'nodes')
-    // const defaultNodes = resultNodes.data.find((item) => item.key === defaultNodesData.defaultValue)
-    // setNodes(defaultNodes)
+    setIsPlanFieldValid(ValidatedOptions.default)
+    setIsCloudProviderFieldValid(ValidatedOptions.default)
   }
 
   const handleDBProviderSelection = (value) => {
@@ -542,7 +544,7 @@ const ProviderClusterProvisionPage = () => {
       setSelectedDBProvider(provider)
       if (provider.value === cockroachdbProviderType) {
         setSelectedDBProviderData(provider.providerData)
-        setProviderData(provider.providerData, provider.defaultData)
+        setDefaultProviderData(provider.providerData, provider.defaultData)
       }
       filterInventoriesByProvider(provider)
     }
@@ -590,7 +592,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handlePlanChange = (value) => {
-    console.log('handlePlanChange')
     if (_.isEmpty(value)) {
       setIsPlanFieldValid(ValidatedOptions.error)
     } else {
@@ -599,13 +600,10 @@ const ProviderClusterProvisionPage = () => {
     let selectedPlan = _.find(planOptions, (cpPlan) => {
       return cpPlan.value === value
     })
-    console.log(selectedPlan)
     setPlan(selectedPlan)
   }
 
   const handleRegionChange = (value) => {
-    console.log('handleRegionChange')
-    console.log(value)
     if (_.isEmpty(value)) {
       setIsRegionFieldValid(ValidatedOptions.error)
     } else {
@@ -614,32 +612,10 @@ const ProviderClusterProvisionPage = () => {
     let selectedRegion = _.find(regionsOptions, (cpRegion) => {
       return cpRegion.value === value
     })
-    console.log(selectedRegion)
     setRegion(selectedRegion)
   }
 
-  // const buildComponents = (item) => {
-  //   console.log('buildComponents')
-  //   console.log(item)
-  //   const regionOptions = item.content
-  //   console.log(regionOptions)
-  //   if (item.Control === 'dropdown') {
-  //     return (
-  //       <FormGroup label="Region" fieldId="region" className="provider-account-selection">
-  //         <FormSelect value={region} onChange={handleRegionChange} aria-label="Region" id="region">
-  //           {regionOptions.map((option, index) => (
-  //             <FormSelectOption isDisabled={option.disabled} key={index} value={option.value} label={option.label} />
-  //           ))}
-  //         </FormSelect>
-  //       </FormGroup>
-  //     )
-  //   }
-  //   return <p>{item.content}</p>
-  // }
-
   const handleCPChange = (value) => {
-    console.log('handleCPChange')
-    console.log(value)
     if (_.isEmpty(value)) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
@@ -648,8 +624,6 @@ const ProviderClusterProvisionPage = () => {
     const selectedCP = _.find(cpOptions, (cp) => {
       return cp.value === value
     })
-    console.log(selectedCP)
-    console.log(selections)
     setCloudProvider(selectedCP)
   }
 
@@ -663,8 +637,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handleNodesChange = (value) => {
-    console.log('handleNodesChange')
-    console.log(value)
     if (_.isEmpty(value)) {
       setIsNodesFieldValid(ValidatedOptions.error)
     } else {
@@ -673,8 +645,31 @@ const ProviderClusterProvisionPage = () => {
     const selectedNodes = _.find(nodesOptions, (cpNodes) => {
       return cpNodes.value === value
     })
-    console.log(selectedNodes)
-    setCloudProvider(selectedNodes)
+    setNodes(selectedNodes)
+  }
+
+  const handleComputeChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsComputeFieldValid(ValidatedOptions.error)
+    } else {
+      setIsComputeFieldValid(ValidatedOptions.default)
+    }
+    const selectedCompute = _.find(computeOptions, (cpCompute) => {
+      return cpCompute.value === value
+    })
+    setCompute(selectedCompute)
+  }
+
+  const handleStorageChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsStorageFieldValid(ValidatedOptions.error)
+    } else {
+      setIsStorageFieldValid(ValidatedOptions.default)
+    }
+    const selectedStorage = _.find(storageOptions, (cpStorage) => {
+      return cpStorage.value === value
+    })
+    setStorage(selectedStorage)
   }
 
   const setDBProviderFields = () => {
@@ -799,7 +794,7 @@ const ProviderClusterProvisionPage = () => {
                 isRequired
                 value={plan.value}
                 onChange={handlePlanChange}
-                aria-label="cloudprovider"
+                aria-label="plan"
                 validated={isPlanFieldValid}
               >
                 {planOptions.map((option, index) => (
@@ -915,7 +910,7 @@ const ProviderClusterProvisionPage = () => {
                     validated={isRegionFieldValid}
                   >
                     {regionsOptions.map((option, index) => (
-                      <FormSelectOption key={index} value={option.value} label={option.label} />
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
                     ))}
                   </FormSelect>
                 </FormGroup>
@@ -935,7 +930,7 @@ const ProviderClusterProvisionPage = () => {
                     validated={isNodesFieldValid}
                   >
                     {nodesOptions.map((option, index) => (
-                      <FormSelectOption key={index} value={option.value} label={option.label} />
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
                     ))}
                   </FormSelect>
                 </FormGroup>
@@ -943,78 +938,54 @@ const ProviderClusterProvisionPage = () => {
               <FormFieldGroup
                 header={
                   <FormFieldGroupHeader
-                    titleText={{ text: 'Hardware per node', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleText={{ text: 'Hardware', id: 'field-group4-non-expandable-titleText-id' }}
                     titleDescription="Field group description text."
                   />
                 }
               >
                 <FormGroup
                   label="Compute"
-                  fieldId="hardware"
+                  fieldId="compute"
                   isRequired
                   className="half-width-selection"
                   helperTextInvalid="This is a required field"
-                  // validated={isEngineFieldValid}
+                  validated={isComputeFieldValid}
                 >
                   <FormSelect
                     isRequired
-                    value={cloudProvider.value}
-                    onChange={handleRegionChange}
-                    aria-label="hardware"
-                    //   validated={isEngineFieldValid}
+                    value={compute.value}
+                    onChange={handleComputeChange}
+                    aria-label="compute"
+                    validated={isComputeFieldValid}
                   >
-                    {cpOptions.map((option, index) => (
-                      <FormSelectOption
-                        isDisabled={option.disabled}
-                        key={index}
-                        value={option.value}
-                        label={option.label}
-                      />
+                    {computeOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
                     ))}
                   </FormSelect>
                 </FormGroup>
                 <FormGroup
                   label="Storage"
-                  fieldId="hardware"
+                  fieldId="storage"
                   isRequired
                   className="half-width-selection"
                   helperTextInvalid="This is a required field"
-                  // validated={isEngineFieldValid}
+                  validated={isStorageFieldValid}
                 >
                   <FormSelect
                     isRequired
-                    value={cloudProvider.value}
-                    onChange={handleRegionChange}
-                    aria-label="regions-nodes"
-                    //   validated={isEngineFieldValid}
+                    value={storage.value}
+                    onChange={handleStorageChange}
+                    aria-label="storage"
+                    validated={isStorageFieldValid}
                   >
-                    {cpOptions.map((option, index) => (
-                      <FormSelectOption
-                        isDisabled={option.disabled}
-                        key={index}
-                        value={option.value}
-                        label={option.label}
-                      />
+                    {storageOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
                     ))}
                   </FormSelect>
                 </FormGroup>
               </FormFieldGroup>
             </>
           )}
-
-          {/* <Accordion isBordered asDefinitionList={false} className="half-width-selection"> */}
-          {/*   {accordionData.map((item, index) => ( */}
-          {/*     <AccordionItem index={index}> */}
-          {/*       <AccordionToggle onClick={() => toggle(item.id)} isExpanded={expanded.includes(item.id)} id={item.id}> */}
-          {/*         {item.title} */}
-          {/*       </AccordionToggle> */}
-          {/*       <AccordionContent id={item.id} isHidden={!expanded.includes(item.id)} isFixed> */}
-          {/*         {buildComponents(item)} */}
-          {/*         /!* <p>{item.content}</p> *!/ */}
-          {/*       </AccordionContent> */}
-          {/*     </AccordionItem> */}
-          {/*   ))} */}
-          {/* </Accordion> */}
         </>
       )
     }
@@ -1022,11 +993,13 @@ const ProviderClusterProvisionPage = () => {
   }
 
   React.useEffect(() => {
+    console.log('fetchCSV')
     fetchCSV()
     fetchProviderInfo()
   }, [])
 
   React.useEffect(() => {
+    console.log('disableNSSelection')
     disableNSSelection()
 
     return () => {
@@ -1036,10 +1009,12 @@ const ProviderClusterProvisionPage = () => {
   }, [])
 
   React.useEffect(() => {
+    console.log('fetchInventoriesByNSAndRules()')
     fetchInventoriesByNSAndRules()
   }, [installNamespace])
 
   React.useEffect(() => {
+    console.log('validateForm')
     validateForm()
   }, [
     isDBProviderFieldValid,
@@ -1050,39 +1025,47 @@ const ProviderClusterProvisionPage = () => {
     isEngineFieldValid,
     isPlanFieldValid,
     isCloudProviderFieldValid,
-    isRegionFieldValid,
-    isSpendLimitFieldValid,
+    // isRegionFieldValid,
+    // isSpendLimitFieldValid,
+    // isComputeFieldValid,
+    // isStorageFieldValid,
+    // isNodesFieldValid,
   ])
 
   React.useEffect(() => {
     if (!_.isEmpty(providerList) && !_.isEmpty(inventories)) {
+      console.log('detectSelectedDBProviderAndProviderAccount')
       detectSelectedDBProviderAndProviderAccount()
     }
   }, [providerList, inventories, selectedDBProviderData])
 
-  function resetProviderData() {
-    console.log('resetProviderData')
+  function setProviderData() {
+    console.log('setProviderData')
     selections.set('cloud_provider', cloudProvider.key)
     selections.set('plan', plan.key)
-    console.log(selectedDBProviderData)
     const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.param === 'regions')
     const filteredRegions = filterSelected(resultRegionsUnfiltered)
-    console.log('filteredRegions')
-    console.log(filteredRegions)
     setRegionsOptions(filteredRegions.data)
     const resultNodes = selectedDBProviderData.find((item) => item.param === 'nodes')
     console.log(plan.key)
     console.log(resultNodes.depends[0].value)
-    if (plan.key === resultNodes.depends[0].value) {
+    if (plan.key === 'DEDICATED') {
+      console.log('Setting Dedicated values')
       setNodesOptions(resultNodes.data)
       setNodes(resultNodes.data[0])
+      const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.param === 'machine_type')
+      const filteredCompute = filterSelected(resultComputeUnfiltered)
+      setComputeOptions(filteredCompute.data)
+      setCompute(filteredCompute.data[0])
+      const resultStorage = selectedDBProviderData.find((item) => item.param === 'storage_gib')
+      setStorageOptions(resultStorage.data)
+      setStorage(resultStorage.data[0])
     }
   }
 
   React.useEffect(() => {
     if (!_.isEmpty(selectedDBProvider)) {
-      resetProviderData()
-      //setProviderData(selectedDBProvider.providerData, selectedDBProvider.defaultData)
+      setProviderData()
     }
   }, [plan, cloudProvider])
 
