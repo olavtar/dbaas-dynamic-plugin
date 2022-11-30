@@ -19,16 +19,10 @@ import {
   ValidatedOptions,
   HelperTextItem,
   HelperText,
-  Form,
   Popover,
-  ToggleGroup,
-  ToggleGroupItem,
-  Accordion,
-  AccordionItem,
-  AccordionToggle,
-  AccordionContent,
   FormFieldGroup,
   FormFieldGroupHeader,
+  FormSection,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
 import FormHeader from './form/formHeader'
@@ -289,14 +283,24 @@ const ProviderClusterProvisionPage = () => {
       otherInstanceParams = { projectName: projectName }
     } else if (selectedDBProvider.value === rdsProviderType) {
       otherInstanceParams = { Engine: engine.value }
-    } else if (selectedDBProvider.value === cockroachdbProviderType) {
-      otherInstanceParams = {
-        plan: plan.key,
-        region: region.key,
-        nodes: nodes.key,
-        machine_type: compute.key,
-        storage_gib: storage.key,
-        spend_limit: spendLimit.key,
+    } else if (selectedDBProvider.value === cockroachdbProviderType && plan.value !== 'Freetrial') {
+      if (plan.value === 'Serverless') {
+        otherInstanceParams = {
+          cloud_provider: cloudProvider.key,
+          plan: plan.key,
+          region: region.key,
+          spend_limit: spendLimit.key,
+        }
+      } else {
+        otherInstanceParams = {
+          cloud_provider: cloudProvider.key,
+          plan: plan.key,
+          region: region.key,
+          nodes: nodes.key,
+          machine_type: compute.key,
+          storage_gib: storage.key,
+          spend_limit: spendLimit.key,
+        }
       }
     }
 
@@ -442,7 +446,6 @@ const ProviderClusterProvisionPage = () => {
       // isNodesFieldValid === ValidatedOptions.default &&
       // isStorageFieldValid === ValidatedOptions.default &&
       // isSpendLimitFieldValid === ValidatedOptions.default;
-      console.log(isValid)
     }
     setIsFormValid(isValid)
   }
@@ -491,8 +494,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const filterSelected = (unfilteredList) => {
-    console.log('filterSelected')
-    console.log(selections)
     let regionsList = {}
     filterLoop: for (const item of unfilteredList) {
       for (const dependsItem of item.depends) {
@@ -506,7 +507,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const setDefaultProviderData = (providerData, defaultData) => {
-    console.log('setDefaultProviderData')
     // setting plan options
     const resultPlan = providerData.find((item) => item.param === 'plan')
     setPlanOptions(resultPlan.data)
@@ -516,8 +516,6 @@ const ProviderClusterProvisionPage = () => {
     setPlan(defaultPlan)
     // setting cloud provider options
     const resultCP = providerData.find((item) => item.param === 'cloud_provider')
-    console.log('resultCP')
-    console.log(resultCP)
     setCpOptions(resultCP.data)
     // setting default for the cloup provider
     const defaultCPData = defaultData.find((item) => item.name === 'cloud_provider')
@@ -538,9 +536,6 @@ const ProviderClusterProvisionPage = () => {
         return dbProvider.value === value
       })
       setInventoryHasIssue(false)
-      console.log('handleDBProviderSelection')
-      console.log('provider')
-      console.log(provider)
       setSelectedDBProvider(provider)
       if (provider.value === cockroachdbProviderType) {
         setSelectedDBProviderData(provider.providerData)
@@ -564,7 +559,6 @@ const ProviderClusterProvisionPage = () => {
       .then((data) => {
         let dbProviderList = []
         data.items?.forEach((dbProvider) => {
-          console.log(dbProvider)
           dbProviderList.push({
             value: dbProvider?.metadata?.name,
             label: dbProvider?.spec?.provider?.displayName,
@@ -771,10 +765,11 @@ const ProviderClusterProvisionPage = () => {
         </>
       )
     }
-    if (selectedDBProvider.value === cockroachdbProviderType) {
+    if (selectedDBProvider.value === cockroachdbProviderType && plan.value !== 'Freetrial') {
       return (
         <>
           <FormFieldGroup
+            className="half-width-selection"
             header={
               <FormFieldGroupHeader
                 titleText={{ text: 'Select a Plan', id: 'field-group4-non-expandable-titleText-id' }}
@@ -786,7 +781,6 @@ const ProviderClusterProvisionPage = () => {
               label="Hosting plan"
               fieldId="plan"
               isRequired
-              className="half-width-selection"
               helperTextInvalid="This is a required field"
               validated={isPlanFieldValid}
             >
@@ -807,7 +801,6 @@ const ProviderClusterProvisionPage = () => {
               label="Cloud Provider"
               fieldId="cloudprovider"
               isRequired
-              className="half-width-selection"
               helperTextInvalid="This is a required field"
               validated={isCloudProviderFieldValid}
             >
@@ -828,6 +821,7 @@ const ProviderClusterProvisionPage = () => {
           {plan.value === 'Serverless' ? (
             <>
               <FormFieldGroup
+                className="half-width-selection"
                 header={
                   <FormFieldGroupHeader
                     titleText={{ text: 'Select Regions', id: 'field-group4-non-expandable-titleText-id' }}
@@ -839,7 +833,6 @@ const ProviderClusterProvisionPage = () => {
                   label="Regions"
                   fieldId="regions"
                   isRequired
-                  className="half-width-selection"
                   helperTextInvalid="This is a required field"
                   validated={isRegionFieldValid}
                 >
@@ -857,6 +850,7 @@ const ProviderClusterProvisionPage = () => {
                 </FormGroup>
               </FormFieldGroup>
               <FormFieldGroup
+                className="half-width-selection"
                 header={
                   <FormFieldGroupHeader
                     titleText={{ text: 'Spend Limit', id: 'field-group4-non-expandable-titleText-id' }}
@@ -868,7 +862,6 @@ const ProviderClusterProvisionPage = () => {
                   label="Spend Limit"
                   fieldId="spend-limit"
                   isRequired
-                  className="half-width-selection"
                   helperTextInvalid="This is a required field"
                   validated={isSpendLimitFieldValid}
                 >
@@ -887,9 +880,13 @@ const ProviderClusterProvisionPage = () => {
           ) : (
             <>
               <FormFieldGroup
+                className="half-width-selection"
                 header={
                   <FormFieldGroupHeader
-                    titleText={{ text: 'Regions & Nodes', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleText={{
+                      text: 'Regions & Nodes',
+                      id: 'field-group4-non-expandable-titleText-id',
+                    }}
                     titleDescription="Field group description text."
                   />
                 }
@@ -898,7 +895,6 @@ const ProviderClusterProvisionPage = () => {
                   label="Region"
                   fieldId="regions"
                   isRequired
-                  className="half-width-selection"
                   helperTextInvalid="This is a required field"
                   validated={isRegionFieldValid}
                 >
@@ -918,7 +914,7 @@ const ProviderClusterProvisionPage = () => {
                   label="Nodes"
                   fieldId="nodes"
                   isRequired
-                  className="half-width-selection"
+                  // className="half-width-selection"
                   helperTextInvalid="This is a required field"
                   validated={isNodesFieldValid}
                 >
@@ -936,6 +932,7 @@ const ProviderClusterProvisionPage = () => {
                 </FormGroup>
               </FormFieldGroup>
               <FormFieldGroup
+                className="half-width-selection"
                 header={
                   <FormFieldGroupHeader
                     titleText={{ text: 'Hardware', id: 'field-group4-non-expandable-titleText-id' }}
@@ -947,7 +944,6 @@ const ProviderClusterProvisionPage = () => {
                   label="Compute"
                   fieldId="compute"
                   isRequired
-                  className="half-width-selection"
                   helperTextInvalid="This is a required field"
                   validated={isComputeFieldValid}
                 >
@@ -967,7 +963,6 @@ const ProviderClusterProvisionPage = () => {
                   label="Storage"
                   fieldId="storage"
                   isRequired
-                  className="half-width-selection"
                   helperTextInvalid="This is a required field"
                   validated={isStorageFieldValid}
                 >
@@ -992,14 +987,33 @@ const ProviderClusterProvisionPage = () => {
     return null
   }
 
+  function setProviderData() {
+    selections.set('cloud_provider', cloudProvider.key)
+    selections.set('plan', plan.key)
+    const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.param === 'regions')
+    const filteredRegions = filterSelected(resultRegionsUnfiltered)
+    setRegionsOptions(filteredRegions.data)
+    if (plan.key === 'DEDICATED') {
+      // Setting Dedicated values
+      const resultNodes = selectedDBProviderData.find((item) => item.param === 'nodes')
+      setNodesOptions(resultNodes.data)
+      setNodes(resultNodes.data[0])
+      const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.param === 'machine_type')
+      const filteredCompute = filterSelected(resultComputeUnfiltered)
+      setComputeOptions(filteredCompute.data)
+      setCompute(filteredCompute.data[0])
+      const resultStorage = selectedDBProviderData.find((item) => item.param === 'storage_gib')
+      setStorageOptions(resultStorage.data)
+      setStorage(resultStorage.data[0])
+    }
+  }
+
   React.useEffect(() => {
-    console.log('fetchCSV')
     fetchCSV()
     fetchProviderInfo()
   }, [])
 
   React.useEffect(() => {
-    console.log('disableNSSelection')
     disableNSSelection()
 
     return () => {
@@ -1009,12 +1023,10 @@ const ProviderClusterProvisionPage = () => {
   }, [])
 
   React.useEffect(() => {
-    console.log('fetchInventoriesByNSAndRules()')
     fetchInventoriesByNSAndRules()
   }, [installNamespace])
 
   React.useEffect(() => {
-    console.log('validateForm')
     validateForm()
   }, [
     isDBProviderFieldValid,
@@ -1034,34 +1046,9 @@ const ProviderClusterProvisionPage = () => {
 
   React.useEffect(() => {
     if (!_.isEmpty(providerList) && !_.isEmpty(inventories)) {
-      console.log('detectSelectedDBProviderAndProviderAccount')
       detectSelectedDBProviderAndProviderAccount()
     }
   }, [providerList, inventories, selectedDBProviderData])
-
-  function setProviderData() {
-    console.log('setProviderData')
-    selections.set('cloud_provider', cloudProvider.key)
-    selections.set('plan', plan.key)
-    const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.param === 'regions')
-    const filteredRegions = filterSelected(resultRegionsUnfiltered)
-    setRegionsOptions(filteredRegions.data)
-    const resultNodes = selectedDBProviderData.find((item) => item.param === 'nodes')
-    console.log(plan.key)
-    console.log(resultNodes.depends[0].value)
-    if (plan.key === 'DEDICATED') {
-      console.log('Setting Dedicated values')
-      setNodesOptions(resultNodes.data)
-      setNodes(resultNodes.data[0])
-      const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.param === 'machine_type')
-      const filteredCompute = filterSelected(resultComputeUnfiltered)
-      setComputeOptions(filteredCompute.data)
-      setCompute(filteredCompute.data[0])
-      const resultStorage = selectedDBProviderData.find((item) => item.param === 'storage_gib')
-      setStorageOptions(resultStorage.data)
-      setStorage(resultStorage.data[0])
-    }
-  }
 
   React.useEffect(() => {
     if (!_.isEmpty(selectedDBProvider)) {
