@@ -161,7 +161,6 @@ const ProviderClusterProvisionPage = () => {
     { value: 'mysql', label: 'MySQL', disabled: false },
     { value: 'postgres', label: 'PostgreSQL', disabled: false },
   ]
-  const selections = new Map()
 
   const checkInventoryStatus = (inventory) => {
     if (inventory?.status?.conditions[0]?.type === 'SpecSynced') {
@@ -283,7 +282,7 @@ const ProviderClusterProvisionPage = () => {
       otherInstanceParams = { projectName: projectName }
     } else if (selectedDBProvider.value === rdsProviderType) {
       otherInstanceParams = { Engine: engine.value }
-    } else if (selectedDBProvider.value === cockroachdbProviderType && plan.value !== 'Freetrial') {
+    } else if (selectedDBProvider.value === cockroachdbProviderType) {
       if (plan.value === 'Serverless') {
         otherInstanceParams = {
           cloud_provider: cloudProvider.key,
@@ -291,7 +290,7 @@ const ProviderClusterProvisionPage = () => {
           region: region.key,
           spend_limit: spendLimit.key,
         }
-      } else {
+      } else if (plan.value === 'Dedicated'){
         otherInstanceParams = {
           cloud_provider: cloudProvider.key,
           plan: plan.key,
@@ -300,6 +299,8 @@ const ProviderClusterProvisionPage = () => {
           machine_type: compute.key,
           storage_gib: storage.key,
           spend_limit: spendLimit.key,
+        } else {
+          otherInstanceParams = {}
         }
       }
     }
@@ -439,13 +440,18 @@ const ProviderClusterProvisionPage = () => {
       isValid =
         isValid &&
         isPlanFieldValid === ValidatedOptions.default &&
-        isCloudProviderFieldValid === ValidatedOptions.default
-      //   &&
-      // isRegionFieldValid === ValidatedOptions.default &&
-      // isComputeFieldValid === ValidatedOptions.default &&
-      // isNodesFieldValid === ValidatedOptions.default &&
-      // isStorageFieldValid === ValidatedOptions.default &&
-      // isSpendLimitFieldValid === ValidatedOptions.default;
+        isCloudProviderFieldValid === ValidatedOptions.default &&
+          isRegionFieldValid === ValidatedOptions.default
+      if(plan.value === 'Serverless'){
+        isValid =
+            isValid && isSpendLimitFieldValid === ValidatedOptions.default;
+
+      } else if(plan.value === 'Dedicated'){
+        isValid =
+            isValid && isComputeFieldValid === ValidatedOptions.default &&
+            isNodesFieldValid === ValidatedOptions.default &&
+            isStorageFieldValid === ValidatedOptions.default
+      }
     }
     setIsFormValid(isValid)
   }
@@ -493,7 +499,7 @@ const ProviderClusterProvisionPage = () => {
     setSelectedInventory(inventory)
   }
 
-  const filterSelected = (unfilteredList) => {
+  const filterSelected = (unfilteredList, selections) => {
     let regionsList = {}
     filterLoop: for (const item of unfilteredList) {
       for (const dependsItem of item.depends) {
@@ -598,11 +604,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handleRegionChange = (value) => {
-    if (_.isEmpty(value)) {
-      setIsRegionFieldValid(ValidatedOptions.error)
-    } else {
-      setIsRegionFieldValid(ValidatedOptions.default)
-    }
     let selectedRegion = _.find(regionsOptions, (cpRegion) => {
       return cpRegion.value === value
     })
@@ -631,11 +632,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handleNodesChange = (value) => {
-    if (_.isEmpty(value)) {
-      setIsNodesFieldValid(ValidatedOptions.error)
-    } else {
-      setIsNodesFieldValid(ValidatedOptions.default)
-    }
     const selectedNodes = _.find(nodesOptions, (cpNodes) => {
       return cpNodes.value === value
     })
@@ -655,11 +651,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handleStorageChange = (value) => {
-    if (_.isEmpty(value)) {
-      setIsStorageFieldValid(ValidatedOptions.error)
-    } else {
-      setIsStorageFieldValid(ValidatedOptions.default)
-    }
     const selectedStorage = _.find(storageOptions, (cpStorage) => {
       return cpStorage.value === value
     })
@@ -988,23 +979,47 @@ const ProviderClusterProvisionPage = () => {
   }
 
   function setProviderData() {
-    selections.set('cloud_provider', cloudProvider.key)
+    const selections = new Map();
+    selections.set('cloud_provider', cloudProvider.key);
     selections.set('plan', plan.key)
+
     const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.param === 'regions')
-    const filteredRegions = filterSelected(resultRegionsUnfiltered)
-    setRegionsOptions(filteredRegions.data)
+    const filteredRegions = filterSelected(resultRegionsUnfiltered, selections)
+    if (filteredRegions?.data.isEmpty(value)) {
+      setIsRegionFieldValid(ValidatedOptions.error)
+    } else {
+      setRegionsOptions(filteredRegions.data)
+      setIsRegionFieldValid(ValidatedOptions.default)
+    }
     if (plan.key === 'DEDICATED') {
       // Setting Dedicated values
       const resultNodes = selectedDBProviderData.find((item) => item.param === 'nodes')
-      setNodesOptions(resultNodes.data)
-      setNodes(resultNodes.data[0])
+      if (resultNodes?.data.isEmpty(value)) {
+        setIsNodesFieldValid(ValidatedOptions.error)
+      } else {
+        setNodesOptions(resultNodes.data)
+        setNodes(resultNodes.data[0])
+        setIsNodesFieldValid(ValidatedOptions.default)
+      }
+
       const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.param === 'machine_type')
       const filteredCompute = filterSelected(resultComputeUnfiltered)
-      setComputeOptions(filteredCompute.data)
-      setCompute(filteredCompute.data[0])
+      if (filteredCompute?.data.isEmpty(value)) {
+        setIsComputeFieldValid(ValidatedOptions.error)
+      } else {
+        setComputeOptions(filteredCompute.data)
+        setCompute(filteredCompute.data[0])
+        setIsComputeFieldValid(ValidatedOptions.default)
+      }
+
       const resultStorage = selectedDBProviderData.find((item) => item.param === 'storage_gib')
-      setStorageOptions(resultStorage.data)
-      setStorage(resultStorage.data[0])
+      if (resultStorage?.data.isEmpty(value)) {
+        setIsStorageFieldValid(ValidatedOptions.error)
+      } else {
+        setStorageOptions(resultStorage.data)
+        setStorage(resultStorage.data[0])
+        setIsStorageFieldValid(ValidatedOptions.default)
+      }
     }
   }
 
@@ -1037,11 +1052,11 @@ const ProviderClusterProvisionPage = () => {
     isEngineFieldValid,
     isPlanFieldValid,
     isCloudProviderFieldValid,
-    // isRegionFieldValid,
-    // isSpendLimitFieldValid,
-    // isComputeFieldValid,
-    // isStorageFieldValid,
-    // isNodesFieldValid,
+    isRegionFieldValid,
+    isSpendLimitFieldValid,
+    isComputeFieldValid,
+    isStorageFieldValid,
+    isNodesFieldValid,
   ])
 
   React.useEffect(() => {
