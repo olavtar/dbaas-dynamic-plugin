@@ -44,7 +44,6 @@ import {
   filterInventoriesByConnNSandProvision,
   fetchDbaasCSV,
 } from '../utils'
-import { forEach } from 'lodash/collection'
 
 const LoadingView = ({ loadingMsg }) => {
   return (
