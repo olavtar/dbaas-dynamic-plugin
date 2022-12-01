@@ -19,14 +19,10 @@ import {
   ValidatedOptions,
   HelperTextItem,
   HelperText,
-  Form,
   Popover,
-  ToggleGroup,
-  ToggleGroupItem,
-  Accordion,
-  AccordionItem,
-  AccordionToggle,
-  AccordionContent,
+  FormFieldGroup,
+  FormFieldGroupHeader,
+
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
 import FormHeader from './form/formHeader'
@@ -48,6 +44,7 @@ import {
   filterInventoriesByConnNSandProvision,
   fetchDbaasCSV,
 } from '../utils'
+import { forEach } from 'lodash/collection'
 
 const LoadingView = ({ loadingMsg }) => {
   return (
@@ -107,8 +104,28 @@ const SuccessView = ({ goToInstancesPage }) => {
 }
 
 const ProviderClusterProvisionPage = () => {
-  const [isSelected, setSelectedPlan] = React.useState('')
-  const [isSelectedCP, setSelectedCP] = React.useState('')
+  const [plan, setPlan] = React.useState([])
+  const [planOptions, setPlanOptions] = React.useState([])
+  const [isPlanFieldValid, setIsPlanFieldValid] = React.useState('')
+  const [cloudProvider, setCloudProvider] = React.useState([])
+  const [cpOptions, setCpOptions] = React.useState([])
+  const [region, setRegion] = React.useState([])
+  const [regionsOptions, setRegionsOptions] = React.useState([])
+  const [selectedDBProviderData, setSelectedDBProviderData] = React.useState({})
+  const [spendLimit, setSpendLimit] = React.useState('0')
+  const [isSpendLimitFieldValid, setIsSpendLimitFieldValid] = React.useState('')
+  const [isRegionFieldValid, setIsRegionFieldValid] = React.useState('')
+  const [isCloudProviderFieldValid, setIsCloudProviderFieldValid] = React.useState('')
+  const [nodes, setNodes] = React.useState([])
+  const [nodesOptions, setNodesOptions] = React.useState([])
+  const [isNodesFieldValid, setIsNodesFieldValid] = React.useState('')
+  const [compute, setCompute] = React.useState([])
+  const [computeOptions, setComputeOptions] = React.useState([])
+  const [isComputeFieldValid, setIsComputeFieldValid] = React.useState('')
+  const [storage, setStorage] = React.useState([])
+  const [storageOptions, setStorageOptions] = React.useState([])
+  const [isStorageFieldValid, setIsStorageFieldValid] = React.useState('')
+
   const [expanded, setExpanded] = React.useState(['ex2-toggle4'])
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
@@ -118,6 +135,7 @@ const ProviderClusterProvisionPage = () => {
   const [selectedInventory, setSelectedInventory] = React.useState({})
   const [clusterName, setClusterName] = React.useState('')
   const [projectName, setProjectName] = React.useState('')
+
   const [engine, setEngine] = React.useState('')
   const [statusMsg, setStatusMsg] = React.useState('')
   const [inventoryHasIssue, setInventoryHasIssue] = React.useState(false)
@@ -143,6 +161,7 @@ const ProviderClusterProvisionPage = () => {
     { value: 'mysql', label: 'MySQL', disabled: false },
     { value: 'postgres', label: 'PostgreSQL', disabled: false },
   ]
+
   const checkInventoryStatus = (inventory) => {
     if (inventory?.status?.conditions[0]?.type === 'SpecSynced') {
       if (inventory?.status?.conditions[0]?.status === 'False') {
@@ -166,6 +185,7 @@ const ProviderClusterProvisionPage = () => {
       setSelectedDBProvider(provider)
       filterInventoriesByProvider(provider)
       setIsDBProviderFieldValid(ValidatedOptions.default)
+      setSelectedDBProviderData(provider.providerData)
     }
 
     if (!_.isEmpty(devSelectedProviderAccountName) && !_.isEmpty(inventories)) {
@@ -262,6 +282,27 @@ const ProviderClusterProvisionPage = () => {
       otherInstanceParams = { projectName: projectName }
     } else if (selectedDBProvider.value === rdsProviderType) {
       otherInstanceParams = { Engine: engine.value }
+    } else if (selectedDBProvider.value === cockroachdbProviderType) {
+      if (plan.value === 'Serverless') {
+        otherInstanceParams = {
+          cloud_provider: cloudProvider.key,
+          plan: plan.key,
+          region: region.key,
+          spend_limit: spendLimit.key,
+        }
+      } else if (plan.value === 'Dedicated') {
+        otherInstanceParams = {
+          cloud_provider: cloudProvider.key,
+          plan: plan.key,
+          region: region.key,
+          nodes: nodes.key,
+          machine_type: compute.key,
+          storage_gib: storage.key,
+          spend_limit: spendLimit.key,
+        }
+      } else {
+        otherInstanceParams = {}
+      }
     }
 
     let requestOpts = {
@@ -395,7 +436,22 @@ const ProviderClusterProvisionPage = () => {
     if (selectedDBProvider.value === rdsProviderType) {
       isValid = isValid && isEngineFieldValid === ValidatedOptions.default
     }
-
+    if (selectedDBProvider.value === cockroachdbProviderType) {
+      isValid =
+        isValid &&
+        isPlanFieldValid === ValidatedOptions.default &&
+        isCloudProviderFieldValid === ValidatedOptions.default &&
+        isRegionFieldValid === ValidatedOptions.default
+      if (plan.value === 'Serverless') {
+        isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
+      } else if (plan.value === 'Dedicated') {
+        isValid =
+          isValid &&
+          isComputeFieldValid === ValidatedOptions.default &&
+          isNodesFieldValid === ValidatedOptions.default &&
+          isStorageFieldValid === ValidatedOptions.default
+      }
+    }
     setIsFormValid(isValid)
   }
 
@@ -442,6 +498,38 @@ const ProviderClusterProvisionPage = () => {
     setSelectedInventory(inventory)
   }
 
+  const filterSelected = (unfilteredList, selections) => {
+    let regionsList = {}
+    filterLoop: for (const item of unfilteredList) {
+      for (const dependsItem of item.depends) {
+        if (dependsItem.value !== selections.get(dependsItem.key)) {
+          continue filterLoop
+        }
+      }
+      regionsList = item
+    }
+    return regionsList
+  }
+
+  const setDefaultProviderData = (providerData, defaultData) => {
+    // setting plan options
+    const resultPlan = providerData.find((item) => item.param === 'plan')
+    setPlanOptions(resultPlan.data)
+    // setting default for the plan
+    const defaultPlanData = defaultData.find((item) => item.name === 'plan')
+    const defaultPlan = resultPlan.data.find((item) => item.key === defaultPlanData.defaultValue)
+    setPlan(defaultPlan)
+    // setting cloud provider options
+    const resultCP = providerData.find((item) => item.param === 'cloud_provider')
+    setCpOptions(resultCP.data)
+    // setting default for the cloup provider
+    const defaultCPData = defaultData.find((item) => item.name === 'cloud_provider')
+    const defaultCP = resultCP.data.find((item) => item.key === defaultCPData.defaultValue)
+    setCloudProvider(defaultCP)
+    setIsPlanFieldValid(ValidatedOptions.default)
+    setIsCloudProviderFieldValid(ValidatedOptions.default)
+  }
+
   const handleDBProviderSelection = (value) => {
     if (_.isEmpty(value)) {
       setIsDBProviderFieldValid(ValidatedOptions.error)
@@ -454,6 +542,10 @@ const ProviderClusterProvisionPage = () => {
       })
       setInventoryHasIssue(false)
       setSelectedDBProvider(provider)
+      if (provider.value === cockroachdbProviderType) {
+        setSelectedDBProviderData(provider.providerData)
+        setDefaultProviderData(provider.providerData, provider.defaultData)
+      }
       filterInventoriesByProvider(provider)
     }
   }
@@ -480,6 +572,8 @@ const ProviderClusterProvisionPage = () => {
               url: dbProvider?.spec?.externalProvisionURL,
               desc: dbProvider?.spec?.externalProvisionDescription,
             },
+            providerData: dbProvider?.status?.providerData,
+            defaultData: dbProvider?.spec?.instanceParameterSpecs,
           })
         })
         setProviderList(providerList.concat(dbProviderList))
@@ -496,16 +590,70 @@ const ProviderClusterProvisionPage = () => {
     setExpanded(newExpanded)
   }
 
-  const handleItemClick = (isSelected, event) => {
-    console.log('handleItemClick')
-    console.log(event.currentTarget.id)
-    setSelectedPlan(event.currentTarget.id)
+  const handlePlanChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsPlanFieldValid(ValidatedOptions.error)
+    } else {
+      setIsPlanFieldValid(ValidatedOptions.default)
+    }
+    let selectedPlan = _.find(planOptions, (cpPlan) => {
+      return cpPlan.value === value
+    })
+    setPlan(selectedPlan)
   }
 
-  const handleCPClick = (isSelectedCP, event) => {
-    console.log('handleCPClick')
-    console.log(event.currentTarget.id)
-    setSelectedCP(event.currentTarget.id)
+  const handleRegionChange = (value) => {
+    let selectedRegion = _.find(regionsOptions, (cpRegion) => {
+      return cpRegion.value === value
+    })
+    setRegion(selectedRegion)
+  }
+
+  const handleCPChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsCloudProviderFieldValid(ValidatedOptions.error)
+    } else {
+      setIsCloudProviderFieldValid(ValidatedOptions.default)
+    }
+    const selectedCP = _.find(cpOptions, (cp) => {
+      return cp.value === value
+    })
+    setCloudProvider(selectedCP)
+  }
+
+  const handleSpendLimitChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsSpendLimitFieldValid(ValidatedOptions.error)
+    } else {
+      setIsSpendLimitFieldValid(ValidatedOptions.default)
+    }
+    setSpendLimit(value)
+  }
+
+  const handleNodesChange = (value) => {
+    const selectedNodes = _.find(nodesOptions, (cpNodes) => {
+      return cpNodes.value === value
+    })
+    setNodes(selectedNodes)
+  }
+
+  const handleComputeChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsComputeFieldValid(ValidatedOptions.error)
+    } else {
+      setIsComputeFieldValid(ValidatedOptions.default)
+    }
+    const selectedCompute = _.find(computeOptions, (cpCompute) => {
+      return cpCompute.value === value
+    })
+    setCompute(selectedCompute)
+  }
+
+  const handleStorageChange = (value) => {
+    const selectedStorage = _.find(storageOptions, (cpStorage) => {
+      return cpStorage.value === value
+    })
+    setStorage(selectedStorage)
   }
 
   const setDBProviderFields = () => {
@@ -607,86 +755,271 @@ const ProviderClusterProvisionPage = () => {
         </>
       )
     }
-    if (selectedDBProvider.value === cockroachdbProviderType) {
-      const accordionData = [
-        {
-          id: 1,
-          title: 'Regions',
-          content: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry',
-        },
-        {
-          id: 2,
-          title: 'Spent Limit',
-          content: 'Contrary to popular belief, Lorem Ipsum is not simply random text',
-        },
-        {
-          id: 3,
-          title: 'Cluster Name',
-          ans: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout',
-        },
-      ]
-
+    if (selectedDBProvider.value === cockroachdbProviderType && plan.value !== 'Freetrial') {
       return (
         <>
-          <FormGroup
-            label="Choose a plan"
-            fieldId="plan"
-            isRequired
+          <FormFieldGroup
             className="half-width-selection"
-            helperTextInvalid="This is a required field"
-            validated={isProjectNameFieldValid}
+            header={
+              <FormFieldGroupHeader
+                titleText={{ text: 'Select a Plan', id: 'field-group4-non-expandable-titleText-id' }}
+                titleDescription="Field group description text."
+              />
+            }
           >
-            <ToggleGroup aria-label="Default with single selectable">
-              <ToggleGroupItem
-                text="Serverless"
-                buttonId="serverless"
-                isSelected={isSelected === 'serverless'}
-                onChange={handleItemClick}
-              />
-              <ToggleGroupItem
-                text="Dedicated"
-                buttonId="dedicated"
-                isSelected={isSelected === 'dedicated'}
-                onChange={handleItemClick}
-              />
-            </ToggleGroup>
-          </FormGroup>
+            <FormGroup
+              label="Hosting plan"
+              fieldId="plan"
+              isRequired
+              helperTextInvalid="This is a required field"
+              validated={isPlanFieldValid}
+            >
+              <FormSelect
+                isRequired
+                value={plan.value}
+                onChange={handlePlanChange}
+                aria-label="plan"
+                validated={isPlanFieldValid}
+              >
+                {planOptions.map((option, index) => (
+                  <FormSelectOption key={index} value={option.value} label={option.value} />
+                ))}
+              </FormSelect>
+            </FormGroup>
 
-          <FormGroup
-            label="Cloud Provider"
-            fieldId="cloudprovider"
-            isRequired
-            className="half-width-selection"
-            helperTextInvalid="This is a required field"
-            validated={isProjectNameFieldValid}
-          >
-            <ToggleGroup aria-label="Default with single selectable">
-              <ToggleGroupItem
-                text="Google Cloud"
-                buttonId="gcp"
-                isSelected={isSelectedCP === 'gcp'}
-                onChange={handleCPClick}
-              />
-              <ToggleGroupItem text="AWS" buttonId="aws" isSelected={isSelectedCP === 'aws'} onChange={handleCPClick} />
-            </ToggleGroup>
-          </FormGroup>
+            <FormGroup
+              label="Cloud Provider"
+              fieldId="cloudprovider"
+              isRequired
+              helperTextInvalid="This is a required field"
+              validated={isCloudProviderFieldValid}
+            >
+              <FormSelect
+                isRequired
+                value={cloudProvider.value}
+                onChange={handleCPChange}
+                aria-label="cloudprovider"
+                validated={isCloudProviderFieldValid}
+              >
+                {cpOptions.map((option, index) => (
+                  <FormSelectOption key={index} value={option.value} label={option.value} />
+                ))}
+              </FormSelect>
+            </FormGroup>
+          </FormFieldGroup>
 
-          <Accordion isBordered asDefinitionList={false} className="half-width-selection">
-            {accordionData.map((item, index) => (
-              <AccordionItem index={index}>
-                <AccordionToggle onClick={() => toggle(item.id)} isExpanded={expanded.includes(item.id)} id={item.id}>
-                  {item.title}
-                </AccordionToggle>
-                <AccordionContent id={item.id} isHidden={!expanded.includes(item.id)} isFixed>
-                  <p>{item.content}</p>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {plan.value === 'Serverless' ? (
+            <>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{ text: 'Select Regions', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Regions"
+                  fieldId="regions"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isRegionFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region.value}
+                    onChange={handleRegionChange}
+                    aria-label="regions"
+                    validated={isRegionFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{ text: 'Spend Limit', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Spend Limit"
+                  fieldId="spend-limit"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isSpendLimitFieldValid}
+                >
+                  <TextInput
+                    isRequired
+                    type="text"
+                    id="spend-limit"
+                    name="spend-limit"
+                    value={spendLimit}
+                    onChange={handleSpendLimitChange}
+                    validated={isSpendLimitFieldValid}
+                  />
+                </FormGroup>
+              </FormFieldGroup>
+            </>
+          ) : (
+            <>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{
+                      text: 'Regions & Nodes',
+                      id: 'field-group4-non-expandable-titleText-id',
+                    }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Region"
+                  fieldId="regions"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isRegionFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region.value}
+                    onChange={handleRegionChange}
+                    aria-label="regions"
+                    validated={isRegionFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup
+                  label="Nodes"
+                  fieldId="nodes"
+                  isRequired
+                  // className="half-width-selection"
+                  helperTextInvalid="This is a required field"
+                  validated={isNodesFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={nodes.value}
+                    onChange={handleNodesChange}
+                    aria-label="nodes"
+                    validated={isNodesFieldValid}
+                  >
+                    {nodesOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{ text: 'Hardware', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Compute"
+                  fieldId="compute"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isComputeFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={compute.value}
+                    onChange={handleComputeChange}
+                    aria-label="compute"
+                    validated={isComputeFieldValid}
+                  >
+                    {computeOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup
+                  label="Storage"
+                  fieldId="storage"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isStorageFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={storage.value}
+                    onChange={handleStorageChange}
+                    aria-label="storage"
+                    validated={isStorageFieldValid}
+                  >
+                    {storageOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.value} label={option.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+            </>
+          )}
         </>
       )
     }
     return null
+  }
+
+  function setProviderData() {
+    const selections = new Map()
+    selections.set('cloud_provider', cloudProvider.key)
+    selections.set('plan', plan.key)
+
+    const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.param === 'regions')
+    const filteredRegions = filterSelected(resultRegionsUnfiltered, selections)
+    if (filteredRegions?.data.isEmpty(value)) {
+      setIsRegionFieldValid(ValidatedOptions.error)
+    } else {
+      setRegionsOptions(filteredRegions.data)
+      setIsRegionFieldValid(ValidatedOptions.default)
+    }
+    if (plan.key === 'DEDICATED') {
+      // Setting Dedicated values
+      const resultNodes = selectedDBProviderData.find((item) => item.param === 'nodes')
+      if (resultNodes?.data.isEmpty(value)) {
+        setIsNodesFieldValid(ValidatedOptions.error)
+      } else {
+        setNodesOptions(resultNodes.data)
+        setNodes(resultNodes.data[0])
+        setIsNodesFieldValid(ValidatedOptions.default)
+      }
+
+      const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.param === 'machine_type')
+      const filteredCompute = filterSelected(resultComputeUnfiltered)
+      if (filteredCompute?.data.isEmpty(value)) {
+        setIsComputeFieldValid(ValidatedOptions.error)
+      } else {
+        setComputeOptions(filteredCompute.data)
+        setCompute(filteredCompute.data[0])
+        setIsComputeFieldValid(ValidatedOptions.default)
+      }
+
+      const resultStorage = selectedDBProviderData.find((item) => item.param === 'storage_gib')
+      if (resultStorage?.data.isEmpty(value)) {
+        setIsStorageFieldValid(ValidatedOptions.error)
+      } else {
+        setStorageOptions(resultStorage.data)
+        setStorage(resultStorage.data[0])
+        setIsStorageFieldValid(ValidatedOptions.default)
+      }
+    }
   }
 
   React.useEffect(() => {
@@ -716,13 +1049,26 @@ const ProviderClusterProvisionPage = () => {
     isProjectNameFieldValid,
     selectedDBProvider,
     isEngineFieldValid,
+    isPlanFieldValid,
+    isCloudProviderFieldValid,
+    isRegionFieldValid,
+    isSpendLimitFieldValid,
+    isComputeFieldValid,
+    isStorageFieldValid,
+    isNodesFieldValid,
   ])
 
   React.useEffect(() => {
     if (!_.isEmpty(providerList) && !_.isEmpty(inventories)) {
       detectSelectedDBProviderAndProviderAccount()
     }
-  }, [providerList, inventories])
+  }, [providerList, inventories, selectedDBProviderData])
+
+  React.useEffect(() => {
+    if (!_.isEmpty(selectedDBProvider)) {
+      setProviderData()
+    }
+  }, [plan, cloudProvider])
 
   return (
     <FlexForm className="instance-table-container" onSubmit={provisionDBCluster}>
