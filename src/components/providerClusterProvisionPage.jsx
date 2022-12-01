@@ -290,7 +290,7 @@ const ProviderClusterProvisionPage = () => {
           region: region.key,
           spend_limit: spendLimit.key,
         }
-      } else if (plan.value === 'Dedicated'){
+      } else if (plan.value === 'Dedicated') {
         otherInstanceParams = {
           cloud_provider: cloudProvider.key,
           plan: plan.key,
@@ -299,9 +299,9 @@ const ProviderClusterProvisionPage = () => {
           machine_type: compute.key,
           storage_gib: storage.key,
           spend_limit: spendLimit.key,
-        } else {
-          otherInstanceParams = {}
         }
+      } else {
+        otherInstanceParams = {}
       }
     }
 
@@ -441,16 +441,15 @@ const ProviderClusterProvisionPage = () => {
         isValid &&
         isPlanFieldValid === ValidatedOptions.default &&
         isCloudProviderFieldValid === ValidatedOptions.default &&
-          isRegionFieldValid === ValidatedOptions.default
-      if(plan.value === 'Serverless'){
+        isRegionFieldValid === ValidatedOptions.default
+      if (plan.value === 'Serverless') {
+        isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
+      } else if (plan.value === 'Dedicated') {
         isValid =
-            isValid && isSpendLimitFieldValid === ValidatedOptions.default;
-
-      } else if(plan.value === 'Dedicated'){
-        isValid =
-            isValid && isComputeFieldValid === ValidatedOptions.default &&
-            isNodesFieldValid === ValidatedOptions.default &&
-            isStorageFieldValid === ValidatedOptions.default
+          isValid &&
+          isComputeFieldValid === ValidatedOptions.default &&
+          isNodesFieldValid === ValidatedOptions.default &&
+          isStorageFieldValid === ValidatedOptions.default
       }
     }
     setIsFormValid(isValid)
@@ -979,8 +978,8 @@ const ProviderClusterProvisionPage = () => {
   }
 
   function setProviderData() {
-    const selections = new Map();
-    selections.set('cloud_provider', cloudProvider.key);
+    const selections = new Map()
+    selections.set('cloud_provider', cloudProvider.key)
     selections.set('plan', plan.key)
 
     const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.param === 'regions')
