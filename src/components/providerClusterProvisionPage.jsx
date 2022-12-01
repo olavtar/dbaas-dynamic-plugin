@@ -754,7 +754,7 @@ const ProviderClusterProvisionPage = () => {
         </>
       )
     }
-    if (selectedDBProvider.value === cockroachdbProviderType && plan.value !== 'Freetrial') {
+    if (selectedDBProvider.value === cockroachdbProviderType) {
       return (
         <>
           <FormFieldGroup
