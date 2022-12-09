@@ -19,8 +19,9 @@ import {
   ValidatedOptions,
   HelperTextItem,
   HelperText,
-  Form,
   Popover,
+  FormFieldGroup,
+  FormFieldGroupHeader,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
 import FormHeader from './form/formHeader'
@@ -32,6 +33,7 @@ import {
   rdsProviderType,
   DBaaSOperatorName,
   rdsEngineTypeDocUrl,
+  cockroachdbProviderType,
 } from '../const'
 import {
   getCSRFToken,
@@ -42,64 +44,84 @@ import {
   fetchDbaasCSV,
 } from '../utils'
 
-const LoadingView = ({ loadingMsg }) => {
-  return (
-    <React.Fragment>
-      <EmptyState>
-        <EmptyStateIcon variant="container" component={Spinner} />
-        <Title size="lg" headingLevel="h3">
-          {loadingMsg}
-        </Title>
-      </EmptyState>
-    </React.Fragment>
-  )
-}
+const LoadingView = ({ loadingMsg }) => (
+  <>
+    <EmptyState>
+      <EmptyStateIcon variant="container" component={Spinner} />
+      <Title size="lg" headingLevel="h3">
+        {loadingMsg}
+      </Title>
+    </EmptyState>
+  </>
+)
 
-const FailedView = ({ handleTryAgain, handleCancel, statusMsg }) => {
-  return (
-    <React.Fragment>
-      <EmptyState>
-        <EmptyStateIcon variant="container" component={InfoCircleIcon} className="error-icon" />
-        <Title headingLevel="h2" size="md">
-          Database instance creation failed
-        </Title>
-        <EmptyStateBody>The instance was not created. Try again.</EmptyStateBody>
-        <Alert variant="danger" isInline title="An error occured" className="co-alert co-break-word extra-top-margin">
-          <div>{statusMsg}</div>
-        </Alert>
-        <Button variant="primary" onClick={handleTryAgain}>
-          Try Again
+const FailedView = ({ handleTryAgain, handleCancel, statusMsg }) => (
+  <>
+    <EmptyState>
+      <EmptyStateIcon variant="container" component={InfoCircleIcon} className="error-icon" />
+      <Title headingLevel="h2" size="md">
+        Database instance creation failed
+      </Title>
+      <EmptyStateBody>The instance was not created. Try again.</EmptyStateBody>
+      <Alert variant="danger" isInline title="An error occured" className="co-alert co-break-word extra-top-margin">
+        <div>{statusMsg}</div>
+      </Alert>
+      <Button variant="primary" onClick={handleTryAgain}>
+        Try Again
+      </Button>
+      <EmptyStateSecondaryActions>
+        <Button variant="link" onClick={handleCancel}>
+          Close
         </Button>
-        <EmptyStateSecondaryActions>
-          <Button variant="link" onClick={handleCancel}>
-            Close
-          </Button>
-        </EmptyStateSecondaryActions>
-      </EmptyState>
-    </React.Fragment>
-  )
-}
+      </EmptyStateSecondaryActions>
+    </EmptyState>
+  </>
+)
 
-const SuccessView = ({ goToInstancesPage }) => {
-  return (
-    <React.Fragment>
-      <EmptyState>
-        <EmptyStateIcon variant="container" component={CheckCircleIcon} className="success-icon" />
-        <Title headingLevel="h2" size="md">
-          Database instance creation started
-        </Title>
-        <EmptyStateBody>
-          The database instance is being created, please click the button below to view it.
-        </EmptyStateBody>
-        <Button variant="primary" onClick={goToInstancesPage}>
-          View Database Instances
-        </Button>
-      </EmptyState>
-    </React.Fragment>
-  )
-}
+const SuccessView = ({ goToInstancesPage }) => (
+  <>
+    <EmptyState>
+      <EmptyStateIcon variant="container" component={CheckCircleIcon} className="success-icon" />
+      <Title headingLevel="h2" size="md">
+        Database instance creation started
+      </Title>
+      <EmptyStateBody>The database instance is being created, please click the button below to view it.</EmptyStateBody>
+      <Button variant="primary" onClick={goToInstancesPage}>
+        View Database Instances
+      </Button>
+    </EmptyState>
+  </>
+)
 
 const ProviderClusterProvisionPage = () => {
+  const [plan, setPlan] = React.useState([])
+  const [planOptions, setPlanOptions] = React.useState([])
+  const [isPlanFieldValid, setIsPlanFieldValid] = React.useState('')
+  const [cloudProvider, setCloudProvider] = React.useState([])
+  const [cpOptions, setCpOptions] = React.useState([])
+  const [region, setRegion] = React.useState([])
+  const [regionsOptions, setRegionsOptions] = React.useState([])
+  const [selectedDBProviderData, setSelectedDBProviderData] = React.useState({})
+  const [spend_limit, setspend_limit] = React.useState('')
+  const [isSpendLimitFieldValid, setIsSpendLimitFieldValid] = React.useState('')
+  const [isRegionFieldValid, setIsRegionFieldValid] = React.useState('')
+  const [isCloudProviderFieldValid, setIsCloudProviderFieldValid] = React.useState('')
+  const [nodes, setNodes] = React.useState([])
+  const [nodesOptions, setNodesOptions] = React.useState([])
+  const [isNodesFieldValid, setIsNodesFieldValid] = React.useState('')
+  const [compute, setCompute] = React.useState([])
+  const [computeOptions, setComputeOptions] = React.useState([])
+  const [isComputeFieldValid, setIsComputeFieldValid] = React.useState('')
+  const [storage, setStorage] = React.useState([])
+  const [storageOptions, setStorageOptions] = React.useState([])
+  const [isStorageFieldValid, setIsStorageFieldValid] = React.useState('')
+
+  const [filteredData, setFilteredData] = React.useState([])
+  const [providerFilteredDataMap, setProviderFilteredDataMap] = React.useState(new Map())
+
+  const [mergedData, setMergedData] = React.useState([])
+
+  const [expanded, setExpanded] = React.useState(['ex2-toggle4'])
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
   const [selectedDBProvider, setSelectedDBProvider] = React.useState({})
@@ -108,6 +130,7 @@ const ProviderClusterProvisionPage = () => {
   const [selectedInventory, setSelectedInventory] = React.useState({})
   const [clusterName, setClusterName] = React.useState('')
   const [projectName, setProjectName] = React.useState('')
+
   const [engine, setEngine] = React.useState('')
   const [statusMsg, setStatusMsg] = React.useState('')
   const [inventoryHasIssue, setInventoryHasIssue] = React.useState(false)
@@ -133,6 +156,7 @@ const ProviderClusterProvisionPage = () => {
     { value: 'mysql', label: 'MySQL', disabled: false },
     { value: 'postgres', label: 'PostgreSQL', disabled: false },
   ]
+
   const checkInventoryStatus = (inventory) => {
     if (inventory?.status?.conditions[0]?.type === 'SpecSynced') {
       if (inventory?.status?.conditions[0]?.status === 'False') {
@@ -150,16 +174,15 @@ const ProviderClusterProvisionPage = () => {
 
   const detectSelectedDBProviderAndProviderAccount = () => {
     if (!_.isEmpty(devSelectedDBProviderName) && !_.isEmpty(providerList)) {
-      let provider = _.find(providerList, (dbProvider) => {
-        return dbProvider.value === devSelectedDBProviderName
-      })
+      const provider = _.find(providerList, (dbProvider) => dbProvider.value === devSelectedDBProviderName)
       setSelectedDBProvider(provider)
       filterInventoriesByProvider(provider)
       setIsDBProviderFieldValid(ValidatedOptions.default)
+      setSelectedDBProviderData(provider.providerData)
     }
 
     if (!_.isEmpty(devSelectedProviderAccountName) && !_.isEmpty(inventories)) {
-      let inventory = inventories.forEach((inv) => {
+      const inventory = inventories.forEach((inv) => {
         if (inv.name === devSelectedProviderAccountName) {
           checkInventoryStatus(inv)
           setSelectedInventory(inv)
@@ -187,7 +210,7 @@ const ProviderClusterProvisionPage = () => {
 
   const checkDBClusterStatus = (clusterName) => {
     if (!_.isEmpty(clusterName)) {
-      let requestOpts = {
+      const requestOpts = {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -196,14 +219,14 @@ const ProviderClusterProvisionPage = () => {
       }
 
       fetch(
-        '/api/kubernetes/apis/dbaas.redhat.com/v1alpha1/namespaces/' + currentNS + '/dbaasinstances/' + clusterName,
+        `/api/kubernetes/apis/dbaas.redhat.com/v1alpha1/namespaces/${currentNS}/dbaasinstances/${clusterName}`,
         requestOpts
       )
         .then((response) => response.json())
         .then((responseJson) => {
-          let provisionReadyCondition = responseJson?.status?.conditions?.find((condition) => {
-            return condition.type?.toLowerCase() === 'provisionready'
-          })
+          const provisionReadyCondition = responseJson?.status?.conditions?.find(
+            (condition) => condition.type?.toLowerCase() === 'provisionready'
+          )
 
           if (responseJson?.status?.phase?.toLowerCase() === 'creating') {
             setClusterProvisionSuccess(true)
@@ -249,12 +272,33 @@ const ProviderClusterProvisionPage = () => {
     let otherInstanceParams = {}
 
     if (selectedDBProvider.value === mongoProviderType) {
-      otherInstanceParams = { projectName: projectName }
+      otherInstanceParams = { projectName }
     } else if (selectedDBProvider.value === rdsProviderType) {
       otherInstanceParams = { Engine: engine.value }
+    } else if (selectedDBProvider.value === cockroachdbProviderType) {
+      if (plan.value === 'Serverless') {
+        otherInstanceParams = {
+          cloud_provider: cloudProvider.key,
+          plan: plan.key,
+          region: region.key,
+          spend_limit: spendLimit.key,
+        }
+      } else if (plan.value === 'Dedicated') {
+        otherInstanceParams = {
+          cloud_provider: cloudProvider.key,
+          plan: plan.key,
+          region: region.key,
+          nodes: nodes.key,
+          machine_type: compute.key,
+          storage_gib: storage.key,
+          spend_limit: spendLimit.key,
+        }
+      } else {
+        otherInstanceParams = {}
+      }
     }
 
-    let requestOpts = {
+    const requestOpts = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -274,7 +318,7 @@ const ProviderClusterProvisionPage = () => {
             name: selectedInventory.name,
             namespace: selectedInventory.namespace,
           },
-          otherInstanceParams: otherInstanceParams,
+          otherInstanceParams,
         },
       }),
     }
@@ -282,7 +326,7 @@ const ProviderClusterProvisionPage = () => {
     setShowResults(false)
     setLoadingMsg('Creating Database Instance...')
 
-    fetch('/api/kubernetes/apis/dbaas.redhat.com/v1alpha1/namespaces/' + currentNS + '/dbaasinstances', requestOpts)
+    fetch(`/api/kubernetes/apis/dbaas.redhat.com/v1alpha1/namespaces/${currentNS}/dbaasinstances`, requestOpts)
       .then((response) => response.json())
       .then((data) => {
         if (data.status === 'Failure') {
@@ -313,12 +357,10 @@ const ProviderClusterProvisionPage = () => {
 
   const filterInventoriesByProvider = (provider) => {
     if (!_.isEmpty(provider)) {
-      let filteredInventoryList = _.filter(inventories, (inventory) => {
-        return inventory.providerRef?.name === provider.value
-      })
+      const filteredInventoryList = _.filter(inventories, (inventory) => inventory.providerRef?.name === provider.value)
       setFilteredInventories(filteredInventoryList)
 
-      //Set the first inventory as the selected inventory by default
+      // Set the first inventory as the selected inventory by default
       if (filteredInventoryList.length > 0) {
         checkInventoryStatus(filteredInventoryList[0])
         setSelectedInventory(filteredInventoryList[0])
@@ -334,10 +376,10 @@ const ProviderClusterProvisionPage = () => {
 
   const parseInventories = (inventoryItems) => {
     if (inventoryItems.length > 0) {
-      let inventories = []
+      const inventories = []
 
       inventoryItems.forEach((inventory, index) => {
-        let obj = { id: 0, name: '', namespace: '', instances: [], status: {}, providerRef: {} }
+        const obj = { id: 0, name: '', namespace: '', instances: [], status: {}, providerRef: {} }
         obj.id = index
         obj.name = inventory.metadata?.name
         obj.namespace = inventory.metadata?.namespace
@@ -348,9 +390,7 @@ const ProviderClusterProvisionPage = () => {
           inventory.status?.conditions[0]?.status !== 'False' &&
           inventory.status?.conditions[0]?.type === 'SpecSynced'
         ) {
-          inventory.status?.instances?.map((instance) => {
-            return (instance.provider = inventory.spec?.providerRef?.name)
-          })
+          inventory.status?.instances?.map((instance) => (instance.provider = inventory.spec?.providerRef?.name))
           obj.instances = inventory.status?.instances
         }
 
@@ -367,7 +407,7 @@ const ProviderClusterProvisionPage = () => {
   }
 
   async function filteredInventoriesByValidConnectionNS(installNS = '') {
-    let inventoryData = await fetchInventoriesAndMapByNSAndRules(installNS).catch(function (error) {
+    const inventoryData = await fetchInventoriesAndMapByNSAndRules(installNS).catch((error) => {
       console.log(error)
     })
     return await filterInventoriesByConnNSandProvision(inventoryData, currentNS)
@@ -385,7 +425,22 @@ const ProviderClusterProvisionPage = () => {
     if (selectedDBProvider.value === rdsProviderType) {
       isValid = isValid && isEngineFieldValid === ValidatedOptions.default
     }
-
+    if (selectedDBProvider.value === cockroachdbProviderType) {
+      isValid =
+        isValid &&
+        isPlanFieldValid === ValidatedOptions.default &&
+        isCloudProviderFieldValid === ValidatedOptions.default &&
+        isRegionFieldValid === ValidatedOptions.default
+      if (plan.value === 'Serverless') {
+        isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
+      } else if (plan.value === 'Dedicated') {
+        isValid =
+          isValid &&
+          isComputeFieldValid === ValidatedOptions.default &&
+          isNodesFieldValid === ValidatedOptions.default &&
+          isStorageFieldValid === ValidatedOptions.default
+      }
+    }
     setIsFormValid(isValid)
   }
 
@@ -404,9 +459,7 @@ const ProviderClusterProvisionPage = () => {
     } else {
       setIsEngineFieldValid(ValidatedOptions.default)
     }
-    let engineType = _.find(engineTypeOptions, (eng) => {
-      return eng.value === value
-    })
+    const engineType = _.find(engineTypeOptions, (eng) => eng.value === value)
     setEngine(engineType)
   }
 
@@ -425,11 +478,73 @@ const ProviderClusterProvisionPage = () => {
     } else {
       setIsInventoryFieldValid(ValidatedOptions.default)
     }
-    let inventory = _.find(inventories, (inv) => {
-      return inv.name === value
-    })
+    const inventory = _.find(inventories, (inv) => inv.name === value)
     checkInventoryStatus(inventory)
     setSelectedInventory(inventory)
+  }
+
+  const filterSelected = (unfilteredList, selections) => {
+    let matched = true
+    console.log('filterSelected')
+    console.log(unfilteredList)
+    console.log(selections)
+
+    for (const dependsItem of unfilteredList.dependencies) {
+      console.log(dependsItem.value)
+      console.log(selections.get(dependsItem.field))
+      if (dependsItem.value !== selections.get(dependsItem.field)) {
+        matched = false
+        break
+      }
+      // selectionList.push(unfilteredList)
+    }
+
+    // filterLoop: for (const item of unfilteredList) {
+    //   for (const dependsItem of item.dependencies) {
+    //     if (dependsItem.value !== selections.get(dependsItem.field)) {
+    //       continue filterLoop
+    //     }
+    //   }
+    //   selectionList = item
+    // }
+    return matched
+  }
+
+  const setDefaultProviderData = (providerData, defaultData) => {
+    console.log('setDefaultProviderData')
+    // const mergedData = []
+    // for (const field of defaultData) {
+    //   const foundField = providerData.filter((item) => item.field === field.name)
+    //   if (foundField.length !== 0) {
+    //     for (const item of foundField) {
+    //       var mergedObj = { ...field, ...item }
+    //       mergedData.push(mergedObj)
+    //     }
+    //   } else mergedData.push(field)
+    // }
+    // console.log('mergedData')
+    // console.log(mergedData)
+    // setMergedData(mergedData)
+
+    // setting plan options and initial value
+    const resultPlan = providerData.find((item) => item.field === 'plan')
+    setPlanOptions(resultPlan.options)
+    if (resultPlan.defaultOption.length === 0) {
+      setIsPlanFieldValid(ValidatedOptions.error)
+    } else {
+      setPlan(resultPlan.defaultOption)
+      setIsPlanFieldValid(ValidatedOptions.default)
+    }
+
+    // setting cloud provider options and initial value
+    const resultCP = providerData.find((item) => item.field === 'cloud_provider')
+    setCpOptions(resultCP.options)
+    if (resultPlan.defaultOption.length === 0) {
+      setIsCloudProviderFieldValid(ValidatedOptions.error)
+    } else {
+      setCloudProvider(resultCP.defaultOption)
+      setIsCloudProviderFieldValid(ValidatedOptions.default)
+    }
   }
 
   const handleDBProviderSelection = (value) => {
@@ -439,17 +554,21 @@ const ProviderClusterProvisionPage = () => {
       setIsDBProviderFieldValid(ValidatedOptions.default)
     }
     if (!_.isEmpty(providerList)) {
-      let provider = _.find(providerList, (dbProvider) => {
-        return dbProvider.value === value
-      })
+      const provider = _.find(providerList, (dbProvider) => dbProvider.value === value)
       setInventoryHasIssue(false)
       setSelectedDBProvider(provider)
+      console.log('provider')
+      console.log(provider)
+      if (provider.value === cockroachdbProviderType) {
+        setSelectedDBProviderData(provider.providerData)
+        setDefaultProviderData(provider.providerData, provider.defaultData)
+      }
       filterInventoriesByProvider(provider)
     }
   }
 
   const fetchProviderInfo = () => {
-    let requestOpts = {
+    const requestOpts = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -460,7 +579,7 @@ const ProviderClusterProvisionPage = () => {
     fetch('/api/kubernetes/apis/dbaas.redhat.com/v1alpha1/dbaasproviders', requestOpts)
       .then((response) => response.json())
       .then((data) => {
-        let dbProviderList = []
+        const dbProviderList = []
         data.items?.forEach((dbProvider) => {
           dbProviderList.push({
             value: dbProvider?.metadata?.name,
@@ -470,6 +589,8 @@ const ProviderClusterProvisionPage = () => {
               url: dbProvider?.spec?.externalProvisionURL,
               desc: dbProvider?.spec?.externalProvisionDescription,
             },
+            providerData: dbProvider?.status?.providerData,
+            defaultData: dbProvider?.spec?.instanceParameterSpecs,
           })
         })
         setProviderList(providerList.concat(dbProviderList))
@@ -477,6 +598,124 @@ const ProviderClusterProvisionPage = () => {
       .catch((err) => {
         console.error(err)
       })
+  }
+
+  const toggle = (id) => {
+    const index = expanded.indexOf(id)
+    const newExpanded =
+      index >= 0 ? [...expanded.slice(0, index), ...expanded.slice(index + 1, expanded.length)] : [...expanded, id]
+    setExpanded(newExpanded)
+  }
+
+  const handlePlanChange = (value) => {
+    console.log('handlePlanChange')
+    console.log(value)
+    if (_.isEmpty(value)) {
+      setIsPlanFieldValid(ValidatedOptions.error)
+    } else {
+      setIsPlanFieldValid(ValidatedOptions.default)
+    }
+    const selectedPlan = _.find(planOptions, (cpPlan) => cpPlan.displayValue === value)
+    setPlan(selectedPlan)
+  }
+
+  const handleRegionChange = (value) => {
+    const selectedRegion = _.find(regionsOptions, (cpRegion) => cpRegion.displayValue === value)
+    setRegion(selectedRegion)
+  }
+
+  const handleCPChange = (value) => {
+    if (_.isEmpty(value)) {
+      setIsCloudProviderFieldValid(ValidatedOptions.error)
+    } else {
+      setIsCloudProviderFieldValid(ValidatedOptions.default)
+    }
+    const selectedCP = _.find(cpOptions, (cp) => cp.displayValue === value)
+    setCloudProvider(selectedCP)
+  }
+
+  const handleSpendLimitChange = (field, value) => {
+    console.log('handleSpendLimitChange')
+    console.log(field)
+    console.log(value)
+    if (_.isEmpty(value)) {
+      setIsSpendLimitFieldValid(ValidatedOptions.error)
+    } else {
+      setIsSpendLimitFieldValid(ValidatedOptions.default)
+    }
+    setSpendLimit(value)
+  }
+
+  const handleNodesChange = (value) => {
+    const selectedNodes = _.find(nodesOptions, (cpNodes) => cpNodes.displayValue === value)
+    setNodes(selectedNodes)
+  }
+
+  const handleComputeChange = (value) => {
+    const selectedCompute = _.find(computeOptions, (cpCompute) => cpCompute.displayValue === value)
+    setCompute(selectedCompute)
+  }
+
+  const handleStorageChange = (value) => {
+    const selectedStorage = _.find(storageOptions, (cpStorage) => cpStorage.displayValue === value)
+    setStorage(selectedStorage)
+  }
+
+  const generateField = (field) => {
+    console.log('generateField')
+    console.log(field)
+    if (field.control === 'editbox') {
+      return (
+        <FormGroup
+          label={field.displayName}
+          fieldId={field.name}
+          className="half-width-selection"
+          isRequired
+          helperTextInvalid="This is a required field"
+          validated={isSpendLimitFieldValid}
+        >
+          <TextInput
+            isRequired
+            type="text"
+            id={field.name}
+            name={field.name}
+            value="{field.name}"
+            onChange={(value) => {
+              field.value = value
+              handleSpendLimitChange(field, value)
+            }}
+            // onChange={handleSpendLimitChange}
+            validated={isSpendLimitFieldValid}
+          />
+        </FormGroup>
+      )
+    }
+    if (field.control === 'dropdown') {
+      return (
+        <FormGroup
+          label={field.displayName}
+          fieldId={field.name}
+          className="half-width-selection"
+          isRequired
+          helperTextInvalid="This is a required field"
+          validated={isRegionFieldValid}
+        >
+          <FormSelect
+            isRequired
+            value={region.displayValue}
+            onChange={handleRegionChange}
+            aria-label="regions"
+            validated={isRegionFieldValid}
+          >
+            {regionsOptions.map((option, index) => (
+              <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+            ))}
+          </FormSelect>
+        </FormGroup>
+      )
+    }
+    if (field.control === 'text') {
+    }
   }
 
   const setDBProviderFields = () => {
@@ -578,7 +817,326 @@ const ProviderClusterProvisionPage = () => {
         </>
       )
     }
+    if (selectedDBProvider.value === cockroachdbProviderType) {
+      if (plan.displayValue === 'Freetrial') {
+        return <></>
+      }
+      return (
+        <>
+          <FormFieldGroup
+            className="half-width-selection"
+            header={
+              <FormFieldGroupHeader
+                titleText={{ text: 'Select a Plan', id: 'field-group4-non-expandable-titleText-id' }}
+                titleDescription="Field group description text."
+              />
+            }
+          >
+            <FormGroup
+              label="Hosting plan"
+              fieldId="plan"
+              isRequired
+              helperTextInvalid="This is a required field"
+              validated={isPlanFieldValid}
+            >
+              <FormSelect
+                isRequired
+                value={plan.displayValue}
+                onChange={handlePlanChange}
+                aria-label="plan"
+                validated={isPlanFieldValid}
+              >
+                {planOptions.map((option, index) => (
+                  <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                ))}
+              </FormSelect>
+            </FormGroup>
+
+            <FormGroup
+              label="Cloud Provider"
+              fieldId="cloudprovider"
+              isRequired
+              helperTextInvalid="This is a required field"
+              validated={isCloudProviderFieldValid}
+            >
+              <FormSelect
+                isRequired
+                value={cloudProvider.displayValue}
+                onChange={handleCPChange}
+                aria-label="cloudprovider"
+                validated={isCloudProviderFieldValid}
+              >
+                {cpOptions.map((option, index) => (
+                  <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                ))}
+              </FormSelect>
+            </FormGroup>
+          </FormFieldGroup>
+
+          {plan.displayValue === 'Serverless' ? (
+            <>
+              {filteredData.map((field) => generateField(field))}
+
+              {/* <FormFieldGroup */}
+              {/*   className="half-width-selection" */}
+              {/*   header={ */}
+              {/*     <FormFieldGroupHeader */}
+              {/*       titleText={{ text: 'Select Regions', id: 'field-group4-non-expandable-titleText-id' }} */}
+              {/*       titleDescription="Field group description text." */}
+              {/*     /> */}
+              {/*   } */}
+              {/* > */}
+              {/*   <FormGroup */}
+              {/*     label="Regions" */}
+              {/*     fieldId="regions" */}
+              {/*     isRequired */}
+              {/*     helperTextInvalid="This is a required field" */}
+              {/*     validated={isRegionFieldValid} */}
+              {/*   > */}
+              {/*     <FormSelect */}
+              {/*       isRequired */}
+              {/*       value={region.displayValue} */}
+              {/*       onChange={handleRegionChange} */}
+              {/*       aria-label="regions" */}
+              {/*       validated={isRegionFieldValid} */}
+              {/*     > */}
+              {/*       {regionsOptions.map((option, index) => ( */}
+              {/*         <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} /> */}
+              {/*       ))} */}
+              {/*     </FormSelect> */}
+              {/*   </FormGroup> */}
+              {/* </FormFieldGroup> */}
+              {/* <FormFieldGroup */}
+              {/*   className="half-width-selection" */}
+              {/*   header={ */}
+              {/*     <FormFieldGroupHeader */}
+              {/*       titleText={{ text: 'Spend Limit', id: 'field-group4-non-expandable-titleText-id' }} */}
+              {/*       titleDescription="Field group description text." */}
+              {/*     /> */}
+              {/*   } */}
+              {/* > */}
+              {/*   <FormGroup */}
+              {/*     label="Spend Limit" */}
+              {/*     fieldId="spend-limit" */}
+              {/*     isRequired */}
+              {/*     helperTextInvalid="This is a required field" */}
+              {/*     validated={isSpendLimitFieldValid} */}
+              {/*   > */}
+              {/*     <TextInput */}
+              {/*       isRequired */}
+              {/*       type="text" */}
+              {/*       id="spend-limit" */}
+              {/*       name="spend-limit" */}
+              {/*       value={spendLimit} */}
+              {/*       onChange={handleSpendLimitChange} */}
+              {/*       validated={isSpendLimitFieldValid} */}
+              {/*     /> */}
+              {/*   </FormGroup> */}
+              {/* </FormFieldGroup> */}
+            </>
+          ) : (
+            <>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{
+                      text: 'Regions & Nodes',
+                      id: 'field-group4-non-expandable-titleText-id',
+                    }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Region"
+                  fieldId="regions"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isRegionFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={region.displayValue}
+                    onChange={handleRegionChange}
+                    aria-label="regions"
+                    validated={isRegionFieldValid}
+                  >
+                    {regionsOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup
+                  label="Nodes"
+                  fieldId="nodes"
+                  isRequired
+                  // className="half-width-selection"
+                  helperTextInvalid="This is a required field"
+                  validated={isNodesFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={nodes.displayValue}
+                    onChange={handleNodesChange}
+                    aria-label="nodes"
+                    validated={isNodesFieldValid}
+                  >
+                    {nodesOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{ text: 'Hardware', id: 'field-group4-non-expandable-titleText-id' }}
+                    titleDescription="Field group description text."
+                  />
+                }
+              >
+                <FormGroup
+                  label="Compute"
+                  fieldId="compute"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isComputeFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={compute.displayValue}
+                    onChange={handleComputeChange}
+                    aria-label="compute"
+                    validated={isComputeFieldValid}
+                  >
+                    {computeOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup
+                  label="Storage"
+                  fieldId="storage"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isStorageFieldValid}
+                >
+                  <FormSelect
+                    isRequired
+                    value={storage.displayValue}
+                    onChange={handleStorageChange}
+                    aria-label="storage"
+                    validated={isStorageFieldValid}
+                  >
+                    {storageOptions.map((option, index) => (
+                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+            </>
+          )}
+        </>
+      )
+    }
     return null
+  }
+
+  function setProviderData() {
+    const selections = new Map()
+    console.log('setProviderData')
+    selections.set('cloud_provider', cloudProvider.value)
+    selections.set('plan', plan.value)
+
+    for (const item of selectedDBProvider.defaultData) {
+      if (item.dependencies !== undefined) {
+        const matchedDependencies = filterSelected(item, selections)
+        console.log('matchedDependencies')
+        console.log(matchedDependencies)
+        console.log(item)
+        if (matchedDependencies === true) {
+          filteredData.push(item)
+          const unfilteredDataList = selectedDBProvider.providerData.filter((dataItem) => dataItem.field === item.name)
+          unfilteredDataList.forEach((element) => {
+            if(){
+
+            }
+            const obj = {id: 0, name: '', namespace: '', instances: [], status: {}}
+            obj.id = index
+            obj.name = inventory.metadata.name
+            obj.namespace = inventory.metadata.namespace
+            obj.status = inventory.status
+          }
+          for (const element of unfilteredDataList) {
+            const matchedData = filterSelected(element, selections)
+            if(matchedData === true){
+              setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(item.name, element)))
+            }
+          }
+        }
+      }
+    }
+    console.log('filteredData')
+    console.log(filteredData)
+    setFilteredData([...filteredData])
+
+    // console.log(mergedData)
+    // const filteredSelectedData = []
+    // for (const item of mergedData) {
+    //   if (item.dependencies !== undefined) {
+    //     const filteredData = filterSelected(item, selections)
+    //     console.log('filteredData')
+    //     console.log(filteredData)
+    //     console.log(filteredData.length)
+    //     if (filteredData.length !== 0) {
+    //       filteredSelectedData.push(filteredData)
+    //     }
+    //   }
+    // }
+    // console.log('filteredSelectedData')
+    // console.log(filteredSelectedData)
+
+    // const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.field === 'regions')
+    // const filteredRegions = filterSelected(resultRegionsUnfiltered, selections)
+    // if (filteredRegions?.options.isEmpty) {
+    //   setIsRegionFieldValid(ValidatedOptions.error)
+    // } else {
+    //   setRegionsOptions(filteredRegions.options)
+    //   setRegion(filteredRegions.defaultOption)
+    //   setIsRegionFieldValid(ValidatedOptions.default)
+    // }
+    // if (plan.value === 'DEDICATED') {
+    //   // Setting Dedicated values
+    //   const resultNodes = selectedDBProviderData.find((item) => item.field === 'nodes')
+    //   if (resultNodes?.options.isEmpty) {
+    //     setIsNodesFieldValid(ValidatedOptions.error)
+    //   } else {
+    //     setNodesOptions(resultNodes.options)
+    //     setNodes(resultNodes.defaultOption)
+    //     setIsNodesFieldValid(ValidatedOptions.default)
+    //   }
+    //
+    //   const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.field === 'machine_type')
+    //   const filteredCompute = filterSelected(resultComputeUnfiltered, selections)
+    //   if (filteredCompute?.options.isEmpty) {
+    //     setIsComputeFieldValid(ValidatedOptions.error)
+    //   } else {
+    //     setComputeOptions(filteredCompute.options)
+    //     setCompute(filteredCompute.defaultOption)
+    //     setIsComputeFieldValid(ValidatedOptions.default)
+    //   }
+    //
+    //   const resultStorage = selectedDBProviderData.find((item) => item.field === 'storage_gib')
+    //   if (resultStorage?.options.isEmpty) {
+    //     setIsStorageFieldValid(ValidatedOptions.error)
+    //   } else {
+    //     setStorageOptions(resultStorage.options)
+    //     setStorage(resultStorage.defaultOption)
+    //     setIsStorageFieldValid(ValidatedOptions.default)
+    //   }
+    // }
   }
 
   React.useEffect(() => {
@@ -608,13 +1166,26 @@ const ProviderClusterProvisionPage = () => {
     isProjectNameFieldValid,
     selectedDBProvider,
     isEngineFieldValid,
+    isPlanFieldValid,
+    isCloudProviderFieldValid,
+    isRegionFieldValid,
+    isSpendLimitFieldValid,
+    isComputeFieldValid,
+    isStorageFieldValid,
+    isNodesFieldValid,
   ])
 
   React.useEffect(() => {
     if (!_.isEmpty(providerList) && !_.isEmpty(inventories)) {
       detectSelectedDBProviderAndProviderAccount()
     }
-  }, [providerList, inventories])
+  }, [providerList, inventories, selectedDBProviderData])
+
+  React.useEffect(() => {
+    if (!_.isEmpty(selectedDBProvider)) {
+      setProviderData()
+    }
+  }, [plan, cloudProvider])
 
   return (
     <FlexForm className="instance-table-container" onSubmit={provisionDBCluster}>
@@ -633,7 +1204,7 @@ const ProviderClusterProvisionPage = () => {
         ) : null}
 
         {showResults && !provisionRequestFired ? (
-          <React.Fragment>
+          <>
             <Alert
               variant="info"
               isInline
@@ -695,7 +1266,7 @@ const ProviderClusterProvisionPage = () => {
               </FormSelect>
             </FormGroup>
             {selectedDBProvider?.allowsFreeTrial === true ? (
-              <React.Fragment>
+              <>
                 <FormGroup
                   label="Provider Account"
                   fieldId="provider-account"
@@ -780,9 +1351,9 @@ const ProviderClusterProvisionPage = () => {
                     </ActionGroup>
                   </>
                 )}
-              </React.Fragment>
+              </>
             ) : null}
-          </React.Fragment>
+          </>
         ) : null}
       </FormBody>
     </FlexForm>
