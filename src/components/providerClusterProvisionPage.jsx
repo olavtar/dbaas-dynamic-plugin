@@ -101,7 +101,7 @@ const ProviderClusterProvisionPage = () => {
   const [cpOptions, setCpOptions] = React.useState([])
   const [region, setRegion] = React.useState([])
   const [regionsOptions, setRegionsOptions] = React.useState([])
-  const [selectedDBProviderData, setSelectedDBProviderData] = React.useState({})
+  const [selectedProvisioningData, setSelectedProvisioningData] = React.useState({})
   const [spendLimit, setSpendLimit] = React.useState('')
   const [isSpendLimitFieldValid, setIsSpendLimitFieldValid] = React.useState('')
   const [isRegionFieldValid, setIsRegionFieldValid] = React.useState('')
@@ -178,7 +178,7 @@ const ProviderClusterProvisionPage = () => {
       setSelectedDBProvider(provider)
       filterInventoriesByProvider(provider)
       setIsDBProviderFieldValid(ValidatedOptions.default)
-      setSelectedDBProviderData(provider.providerData)
+      setSelectedProvisioningData(provider.providerProvisioningData)
     }
 
     if (!_.isEmpty(devSelectedProviderAccountName) && !_.isEmpty(inventories)) {
@@ -484,20 +484,30 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const filterSelected = (unfilteredList, selections) => {
-    let matched = true
+    //  let matched = true
+    let matchedItem
     console.log('filterSelected')
     console.log(unfilteredList)
     console.log(selections)
 
-    for (const dependsItem of unfilteredList.dependencies) {
-      console.log(dependsItem.value)
-      console.log(selections.get(dependsItem.field))
-      if (dependsItem.value !== selections.get(dependsItem.field)) {
-        matched = false
-        break
+    filterLoop: for (const item of unfilteredList) {
+      for (const dependsItem of item.dependencies) {
+        if (dependsItem.value !== selections.get(dependsItem.field)) {
+          continue filterLoop
+        }
       }
-      // selectionList.push(unfilteredList)
+      matchedItem = item
     }
+
+    // for (const dependsItem of unfilteredList.dependencies) {
+    //   console.log(dependsItem.value)
+    //   console.log(selections.get(dependsItem.field))
+    //   if (dependsItem.value !== selections.get(dependsItem.field)) {
+    //     matched = false
+    //     break
+    //   }
+    //   // selectionList.push(unfilteredList)
+    // }
 
     // filterLoop: for (const item of unfilteredList) {
     //   for (const dependsItem of item.dependencies) {
@@ -507,42 +517,34 @@ const ProviderClusterProvisionPage = () => {
     //   }
     //   selectionList = item
     // }
-    return matched
+    console.log(matchedItem)
+    return matchedItem
   }
 
-  const setDefaultProviderData = (providerData, defaultData) => {
+  const setDefaultProviderData = (providerProvisioningData) => {
     console.log('setDefaultProviderData')
-    // const mergedData = []
-    // for (const field of defaultData) {
-    //   const foundField = providerData.filter((item) => item.field === field.name)
-    //   if (foundField.length !== 0) {
-    //     for (const item of foundField) {
-    //       var mergedObj = { ...field, ...item }
-    //       mergedData.push(mergedObj)
-    //     }
-    //   } else mergedData.push(field)
-    // }
-    // console.log('mergedData')
-    // console.log(mergedData)
-    // setMergedData(mergedData)
-
     // setting plan options and initial value
-    const resultPlan = providerData.find((item) => item.field === 'plan')
-    setPlanOptions(resultPlan.options)
-    if (resultPlan.defaultOption.length === 0) {
+    console.log('plan')
+    console.log(providerProvisioningData.plan.optionsLists[0].defaultOption)
+    console.log(providerProvisioningData.plan.optionsLists[0].options)
+
+    if (providerProvisioningData.plan?.optionsLists[0]?.defaultOption === undefined) {
       setIsPlanFieldValid(ValidatedOptions.error)
     } else {
-      setPlan(resultPlan.defaultOption)
+      setPlan(providerProvisioningData.plan.optionsLists[0].defaultOption)
+      setPlanOptions(providerProvisioningData.plan.optionsLists[0].options)
       setIsPlanFieldValid(ValidatedOptions.default)
     }
 
     // setting cloud provider options and initial value
-    const resultCP = providerData.find((item) => item.field === 'cloud_provider')
-    setCpOptions(resultCP.options)
-    if (resultPlan.defaultOption.length === 0) {
+    console.log('cloudProvider')
+    console.log(providerProvisioningData.cloudProvider.optionsLists[0].defaultOption)
+    console.log(providerProvisioningData.cloudProvider.optionsLists[0].options)
+    if (providerProvisioningData.cloudProvider?.optionsLists[0]?.defaultOption === undefined) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
-      setCloudProvider(resultCP.defaultOption)
+      setCloudProvider(providerProvisioningData.cloudProvider.optionsLists[0].defaultOption)
+      setCpOptions(providerProvisioningData.cloudProvider.optionsLists[0].options)
       setIsCloudProviderFieldValid(ValidatedOptions.default)
     }
   }
@@ -560,8 +562,8 @@ const ProviderClusterProvisionPage = () => {
       console.log('provider')
       console.log(provider)
       if (provider.value === cockroachdbProviderType) {
-        setSelectedDBProviderData(provider.providerData)
-        setDefaultProviderData(provider.providerData, provider.defaultData)
+        setSelectedProvisioningData(provider.providerProvisioningData)
+        setDefaultProviderData(provider.providerProvisioningData)
       }
       filterInventoriesByProvider(provider)
     }
@@ -581,6 +583,9 @@ const ProviderClusterProvisionPage = () => {
       .then((data) => {
         const dbProviderList = []
         data.items?.forEach((dbProvider) => {
+          console.log('dbProvider')
+          console.log(dbProvider)
+
           dbProviderList.push({
             value: dbProvider?.metadata?.name,
             label: dbProvider?.spec?.provider?.displayName,
@@ -589,8 +594,7 @@ const ProviderClusterProvisionPage = () => {
               url: dbProvider?.spec?.externalProvisionURL,
               desc: dbProvider?.spec?.externalProvisionDescription,
             },
-            providerData: dbProvider?.status?.providerData,
-            defaultData: dbProvider?.spec?.instanceParameterSpecs,
+            providerProvisioningData: dbProvider?.spec?.provisioningParameters,
           })
         })
         setProviderList(providerList.concat(dbProviderList))
@@ -891,78 +895,78 @@ const ProviderClusterProvisionPage = () => {
           {plan.displayValue === 'Serverless' ? (
             <>
               {/* {filteredFields.map((field) => generateField(field))} */}
-              <FormFieldGroup
-                className="half-width-selection"
-                header={
-                  <FormFieldGroupHeader
-                    titleText={{ text: 'Select Regions', id: 'field-group4-non-expandable-titleText-id' }}
-                    titleDescription=""
-                  />
-                }
-              >
-                <FormGroup
-                  label="Regions"
-                  fieldId="serverless_regions"
-                  isRequired
-                  helperTextInvalid="This is a required field"
-                  validated={isRegionFieldValid}
-                  className={displayField('serverless_regions') === undefined ? 'hide' : 'none'}
-                >
-                  <FormSelect
-                    isRequired
-                    value={
-                      providerFilteredDataMap.has('serverless_regions') === true
-                        ? providerFilteredDataMap.get('serverless_regions').displayValue
-                        : ''
-                    }
-                    // onChange={handleRegionChange}
-                    onChange={(value) => {
-                      providerFilteredDataMap.set(
-                        'serverless_regions',
-                        displayField('serverless_regions').options.find((item) => item.displayValue === value)
-                      )
-                      console.log('onChange')
-                      setProviderFilteredDataMap(providerFilteredDataMap)
-                      setProviderFilteredDataMap(new Map(providerFilteredDataMap))
-                      console.log(providerFilteredDataMap)
-                    }}
-                    aria-label="serverless_regions"
-                    validated={isRegionFieldValid}
-                  >
-                    {displayField('serverless_regions') !== undefined &&
-                      displayField('serverless_regions').options.map((option, index) => (
-                        <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                      ))}
-                  </FormSelect>
-                </FormGroup>
-              </FormFieldGroup>
-              <FormFieldGroup
-                className="half-width-selection"
-                header={
-                  <FormFieldGroupHeader
-                    titleText={{ text: 'Spend Limit', id: 'field-group4-non-expandable-titleText-id' }}
-                    titleDescription="Field group description text."
-                  />
-                }
-              >
-                <FormGroup
-                  label="Spend Limit"
-                  fieldId="spend-limit"
-                  isRequired
-                  helperTextInvalid="This is a required field"
-                  validated={isSpendLimitFieldValid}
-                >
-                  <TextInput
-                    isRequired
-                    type="text"
-                    id="spend-limit"
-                    name="spend-limit"
-                    value={spendLimit}
-                    onChange={handleSpendLimitChange}
-                    validated={isSpendLimitFieldValid}
-                  />
-                </FormGroup>
-              </FormFieldGroup>
+              {/* <FormFieldGroup */}
+              {/*   className="half-width-selection" */}
+              {/*   header={ */}
+              {/*     <FormFieldGroupHeader */}
+              {/*       titleText={{ text: 'Select Regions', id: 'field-group4-non-expandable-titleText-id' }} */}
+              {/*       titleDescription="" */}
+              {/*     /> */}
+              {/*   } */}
+              {/* > */}
+              {/*   <FormGroup */}
+              {/*     label="Regions" */}
+              {/*     fieldId="serverless_regions" */}
+              {/*     isRequired */}
+              {/*     helperTextInvalid="This is a required field" */}
+              {/*     validated={isRegionFieldValid} */}
+              {/*     className={displayField('serverless_regions') === undefined ? 'hide' : 'none'} */}
+              {/*   > */}
+              {/*     <FormSelect */}
+              {/*       isRequired */}
+              {/*       value={ */}
+              {/*         providerFilteredDataMap.has('serverless_regions') === true */}
+              {/*           ? providerFilteredDataMap.get('serverless_regions').displayValue */}
+              {/*           : '' */}
+              {/*       } */}
+              {/*       // onChange={handleRegionChange} */}
+              {/*       onChange={(value) => { */}
+              {/*         providerFilteredDataMap.set( */}
+              {/*           'serverless_regions', */}
+              {/*           displayField('serverless_regions').options.find((item) => item.displayValue === value) */}
+              {/*         ) */}
+              {/*         console.log('onChange') */}
+              {/*         setProviderFilteredDataMap(providerFilteredDataMap) */}
+              {/*         setProviderFilteredDataMap(new Map(providerFilteredDataMap)) */}
+              {/*         console.log(providerFilteredDataMap) */}
+              {/*       }} */}
+              {/*       aria-label="serverless_regions" */}
+              {/*       validated={isRegionFieldValid} */}
+              {/*     > */}
+              {/*       {displayField('serverless_regions') !== undefined && */}
+              {/*         displayField('serverless_regions').options.map((option, index) => ( */}
+              {/*           <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} /> */}
+              {/*         ))} */}
+              {/*     </FormSelect> */}
+              {/*   </FormGroup> */}
+              {/* </FormFieldGroup> */}
+              {/* <FormFieldGroup */}
+              {/*   className="half-width-selection" */}
+              {/*   header={ */}
+              {/*     <FormFieldGroupHeader */}
+              {/*       titleText={{ text: 'Spend Limit', id: 'field-group4-non-expandable-titleText-id' }} */}
+              {/*       titleDescription="Field group description text." */}
+              {/*     /> */}
+              {/*   } */}
+              {/* > */}
+              {/*   <FormGroup */}
+              {/*     label="Spend Limit" */}
+              {/*     fieldId="spend-limit" */}
+              {/*     isRequired */}
+              {/*     helperTextInvalid="This is a required field" */}
+              {/*     validated={isSpendLimitFieldValid} */}
+              {/*   > */}
+              {/*     <TextInput */}
+              {/*       isRequired */}
+              {/*       type="text" */}
+              {/*       id="spend-limit" */}
+              {/*       name="spend-limit" */}
+              {/*       value={spendLimit} */}
+              {/*       onChange={handleSpendLimitChange} */}
+              {/*       validated={isSpendLimitFieldValid} */}
+              {/*     /> */}
+              {/*   </FormGroup> */}
+              {/* </FormFieldGroup> */}
             </>
           ) : (
             <>
@@ -1074,27 +1078,56 @@ const ProviderClusterProvisionPage = () => {
     return null
   }
 
-  function setProviderData() {
+  const setProviderData = () => {
     const selections = new Map()
     console.log('setProviderData')
-    selections.set('cloud_provider', cloudProvider.value)
+    selections.set('cloudProvider', cloudProvider.value)
     selections.set('plan', plan.value)
     providerFilteredDataMap.clear()
     setFilteredFields([])
     const matchedFields = []
+    console.log(selectedProvisioningData)
 
-    for (const item of selectedDBProvider.providerData) {
-      if (item.dependencies !== undefined) {
-        const matchedDependencies = filterSelected(item, selections)
-        console.log('matchedDependencies')
-        console.log(matchedDependencies)
-        console.log(item)
-        if (matchedDependencies === true) {
-          matchedFields.push(item)
-          setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(item.field, item.defaultOption)))
+    Object.keys(selectedProvisioningData).map((key) => {
+      console.log(selectedProvisioningData[key])
+      const item = selectedProvisioningData[key]
+      if (item.optionsLists !== undefined) {
+        console.log('optionLists is not Undefined')
+        //    for (const optionsListItem of item.optionsLists) {
+        //  if (optionsListItem.dependencies !== undefined) {
+        if (item.optionsLists[0].dependencies !== undefined) {
+          console.log('dependencies are not Undefined')
+          // console.log(optionsListItem.dependencies)
+          const matchedDependencies = filterSelected(item.optionsLists, selections)
+          if (matchedDependencies !== undefined) {
+            console.log(item.key)
+            setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(key, matchedDependencies.defaultOption)))
+          }
         }
+        //  }
       }
-    }
+    })
+
+    console.log('providerFilteredDataMap')
+    console.log(providerFilteredDataMap)
+    // Object.entries(selectedProvisioningData).forEach((entry) => {
+    //   console.log(entry)
+    //   console.log(entry.displayName)
+    // })
+
+    // for (const item of selectedDBProvider.providerProvisioningData) {
+    //   if (item.dependencies !== undefined) {
+    //     const matchedDependencies = filterSelected(item, selections)
+    //     console.log('matchedDependencies')
+    //     console.log(matchedDependencies)
+    //     console.log(item)
+    //     if (matchedDependencies === true) {
+    //       matchedFields.push(item)
+    //       setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(item.field, item.defaultOption)))
+    //     }
+    //   }
+    // }
+
     // for (const item of selectedDBProvider.defaultData) {
     //   if (item.dependencies !== undefined) {
     //     const matchedDependencies = filterSelected(item, selections)
@@ -1103,7 +1136,7 @@ const ProviderClusterProvisionPage = () => {
     //     console.log(item)
     //     if (matchedDependencies === true) {
     //       filteredFields.push(item)
-    //       const unfilteredDataList = selectedDBProvider.providerData.filter((dataItem) => dataItem.field === item.name)
+    //       const unfilteredDataList = selectedDBProvider.providerProvisioningData.filter((dataItem) => dataItem.field === item.name)
     //       unfilteredDataList.forEach((element) => {
     //         if(){
     //
@@ -1124,11 +1157,9 @@ const ProviderClusterProvisionPage = () => {
     //   }
     // }
 
-    setFilteredFields([...matchedFields])
-    console.log('matchedFields')
-    console.log(matchedFields)
-    console.log('providerFilteredDataMap')
-    console.log(providerFilteredDataMap)
+    // setFilteredFields([...matchedFields])
+    // console.log('matchedFields')
+    // console.log(matchedFields)
 
     // console.log(mergedData)
     // const filteredSelectedData = []
@@ -1146,7 +1177,7 @@ const ProviderClusterProvisionPage = () => {
     // console.log('filteredSelectedData')
     // console.log(filteredSelectedData)
 
-    // const resultRegionsUnfiltered = selectedDBProviderData.filter((item) => item.field === 'regions')
+    // const resultRegionsUnfiltered = selectedProvisioningData.filter((item) => item.field === 'regions')
     // const filteredRegions = filterSelected(resultRegionsUnfiltered, selections)
     // if (filteredRegions?.options.isEmpty) {
     //   setIsRegionFieldValid(ValidatedOptions.error)
@@ -1157,7 +1188,7 @@ const ProviderClusterProvisionPage = () => {
     // }
     // if (plan.value === 'DEDICATED') {
     //   // Setting Dedicated values
-    //   const resultNodes = selectedDBProviderData.find((item) => item.field === 'nodes')
+    //   const resultNodes = selectedProvisioningData.find((item) => item.field === 'nodes')
     //   if (resultNodes?.options.isEmpty) {
     //     setIsNodesFieldValid(ValidatedOptions.error)
     //   } else {
@@ -1166,7 +1197,7 @@ const ProviderClusterProvisionPage = () => {
     //     setIsNodesFieldValid(ValidatedOptions.default)
     //   }
     //
-    //   const resultComputeUnfiltered = selectedDBProviderData.filter((item) => item.field === 'machine_type')
+    //   const resultComputeUnfiltered = selectedProvisioningData.filter((item) => item.field === 'machine_type')
     //   const filteredCompute = filterSelected(resultComputeUnfiltered, selections)
     //   if (filteredCompute?.options.isEmpty) {
     //     setIsComputeFieldValid(ValidatedOptions.error)
@@ -1176,7 +1207,7 @@ const ProviderClusterProvisionPage = () => {
     //     setIsComputeFieldValid(ValidatedOptions.default)
     //   }
     //
-    //   const resultStorage = selectedDBProviderData.find((item) => item.field === 'storage_gib')
+    //   const resultStorage = selectedProvisioningData.find((item) => item.field === 'storage_gib')
     //   if (resultStorage?.options.isEmpty) {
     //     setIsStorageFieldValid(ValidatedOptions.error)
     //   } else {
@@ -1227,7 +1258,7 @@ const ProviderClusterProvisionPage = () => {
     if (!_.isEmpty(providerList) && !_.isEmpty(inventories)) {
       detectSelectedDBProviderAndProviderAccount()
     }
-  }, [providerList, inventories, selectedDBProviderData])
+  }, [providerList, inventories, selectedProvisioningData])
 
   React.useEffect(() => {
     if (!_.isEmpty(selectedDBProvider)) {
