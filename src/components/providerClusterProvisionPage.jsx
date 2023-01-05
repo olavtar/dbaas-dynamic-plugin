@@ -99,29 +99,18 @@ const ProviderClusterProvisionPage = () => {
   const [isPlanFieldValid, setIsPlanFieldValid] = React.useState('')
   const [cloudProvider, setCloudProvider] = React.useState([])
   const [cpOptions, setCpOptions] = React.useState([])
-  const [region, setRegion] = React.useState([])
-  const [regionsOptions, setRegionsOptions] = React.useState([])
   const [selectedProvisioningData, setSelectedProvisioningData] = React.useState({})
-  const [spendLimit, setSpendLimit] = React.useState('')
   const [isSpendLimitFieldValid, setIsSpendLimitFieldValid] = React.useState('')
   const [isRegionFieldValid, setIsRegionFieldValid] = React.useState('')
   const [isCloudProviderFieldValid, setIsCloudProviderFieldValid] = React.useState('')
-  const [nodes, setNodes] = React.useState([])
-  const [nodesOptions, setNodesOptions] = React.useState([])
   const [isNodesFieldValid, setIsNodesFieldValid] = React.useState('')
-  const [compute, setCompute] = React.useState([])
-  const [computeOptions, setComputeOptions] = React.useState([])
   const [isComputeFieldValid, setIsComputeFieldValid] = React.useState('')
-  const [storage, setStorage] = React.useState([])
-  const [storageOptions, setStorageOptions] = React.useState([])
   const [isStorageFieldValid, setIsStorageFieldValid] = React.useState('')
 
-  const [filteredFields, setFilteredFields] = React.useState([])
-  const [providerFilteredDataMap, setProviderFilteredDataMap] = React.useState(new Map())
+  // const [filteredFields, setFilteredFields] = React.useState([])
+  const [filteredFieldsMap, setFilteredFieldsMap] = React.useState(new Map())
+  const [providerChosenOptionsMap, setProviderChosenOptionsMap] = React.useState(new Map())
 
-  const [mergedData, setMergedData] = React.useState([])
-
-  const [expanded, setExpanded] = React.useState(['ex2-toggle4'])
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
   const [selectedDBProvider, setSelectedDBProvider] = React.useState({})
@@ -276,14 +265,14 @@ const ProviderClusterProvisionPage = () => {
     } else if (selectedDBProvider.value === rdsProviderType) {
       otherInstanceParams = { Engine: engine.value }
     } else if (selectedDBProvider.value === cockroachdbProviderType) {
-      if (plan.value === 'Serverless') {
+      if (plan.value === 'SERVERLESS') {
         otherInstanceParams = {
           cloud_provider: cloudProvider.key,
           plan: plan.key,
           region: region.key,
-          spend_limit: spendLimit.key,
+          spendLimit: spendLimit.key,
         }
-      } else if (plan.value === 'Dedicated') {
+      } else if (plan.value === 'DEDICATED') {
         otherInstanceParams = {
           cloud_provider: cloudProvider.key,
           plan: plan.key,
@@ -291,7 +280,7 @@ const ProviderClusterProvisionPage = () => {
           nodes: nodes.key,
           machine_type: compute.key,
           storage_gib: storage.key,
-          spend_limit: spendLimit.key,
+          spendLimit: spendLimit.key,
         }
       } else {
         otherInstanceParams = {}
@@ -425,22 +414,22 @@ const ProviderClusterProvisionPage = () => {
     if (selectedDBProvider.value === rdsProviderType) {
       isValid = isValid && isEngineFieldValid === ValidatedOptions.default
     }
-    if (selectedDBProvider.value === cockroachdbProviderType) {
-      isValid =
-        isValid &&
-        isPlanFieldValid === ValidatedOptions.default &&
-        isCloudProviderFieldValid === ValidatedOptions.default &&
-        isRegionFieldValid === ValidatedOptions.default
-      if (plan.value === 'Serverless') {
-        isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
-      } else if (plan.value === 'Dedicated') {
-        isValid =
-          isValid &&
-          isComputeFieldValid === ValidatedOptions.default &&
-          isNodesFieldValid === ValidatedOptions.default &&
-          isStorageFieldValid === ValidatedOptions.default
-      }
-    }
+    // if (selectedDBProvider.value === cockroachdbProviderType) {
+    //   isValid =
+    //     isValid &&
+    //     isPlanFieldValid === ValidatedOptions.default &&
+    //     isCloudProviderFieldValid === ValidatedOptions.default &&
+    //     isRegionFieldValid === ValidatedOptions.default
+    //   if (plan.value === 'SERVERLESS') {
+    //     isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
+    //   } else if (plan.value === 'DEDICATED') {
+    //     isValid =
+    //       isValid &&
+    //       isComputeFieldValid === ValidatedOptions.default &&
+    //       isNodesFieldValid === ValidatedOptions.default &&
+    //       isStorageFieldValid === ValidatedOptions.default
+    //   }
+    // }
     setIsFormValid(isValid)
   }
 
@@ -484,11 +473,10 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const filterSelected = (unfilteredList, selections) => {
-    //  let matched = true
     let matchedItem
-    console.log('filterSelected')
-    console.log(unfilteredList)
-    console.log(selections)
+    //console.log('filterSelected')
+    // console.log(unfilteredList)
+    // console.log(selections)
 
     filterLoop: for (const item of unfilteredList) {
       for (const dependsItem of item.dependencies) {
@@ -499,25 +487,8 @@ const ProviderClusterProvisionPage = () => {
       matchedItem = item
     }
 
-    // for (const dependsItem of unfilteredList.dependencies) {
-    //   console.log(dependsItem.value)
-    //   console.log(selections.get(dependsItem.field))
-    //   if (dependsItem.value !== selections.get(dependsItem.field)) {
-    //     matched = false
-    //     break
-    //   }
-    //   // selectionList.push(unfilteredList)
-    // }
-
-    // filterLoop: for (const item of unfilteredList) {
-    //   for (const dependsItem of item.dependencies) {
-    //     if (dependsItem.value !== selections.get(dependsItem.field)) {
-    //       continue filterLoop
-    //     }
-    //   }
-    //   selectionList = item
-    // }
-    console.log(matchedItem)
+    // console.log('matchedItem')
+    // console.log(matchedItem)
     return matchedItem
   }
 
@@ -525,8 +496,8 @@ const ProviderClusterProvisionPage = () => {
     console.log('setDefaultProviderData')
     // setting plan options and initial value
     console.log('plan')
-    console.log(providerProvisioningData.plan.optionsLists[0].defaultOption)
-    console.log(providerProvisioningData.plan.optionsLists[0].options)
+
+    const selections = new Map()
 
     if (providerProvisioningData.plan?.optionsLists[0]?.defaultOption === undefined) {
       setIsPlanFieldValid(ValidatedOptions.error)
@@ -534,17 +505,28 @@ const ProviderClusterProvisionPage = () => {
       setPlan(providerProvisioningData.plan.optionsLists[0].defaultOption)
       setPlanOptions(providerProvisioningData.plan.optionsLists[0].options)
       setIsPlanFieldValid(ValidatedOptions.default)
+      selections.set('plan', providerProvisioningData.plan.optionsLists[0].defaultOption)
     }
 
     // setting cloud provider options and initial value
     console.log('cloudProvider')
-    console.log(providerProvisioningData.cloudProvider.optionsLists[0].defaultOption)
-    console.log(providerProvisioningData.cloudProvider.optionsLists[0].options)
-    if (providerProvisioningData.cloudProvider?.optionsLists[0]?.defaultOption === undefined) {
+    let cpDefault
+    filterLoop: for (const item of providerProvisioningData.cloudProvider.optionsLists) {
+      for (const dependsItem of item.dependencies) {
+        if (dependsItem.value !== selections.get(dependsItem.field).value) {
+          continue filterLoop
+        }
+      }
+      cpDefault = item
+    }
+
+    console.log(cpDefault)
+    if (cpDefault.defaultOption === undefined) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
-      setCloudProvider(providerProvisioningData.cloudProvider.optionsLists[0].defaultOption)
-      setCpOptions(providerProvisioningData.cloudProvider.optionsLists[0].options)
+      setCloudProvider(cpDefault.defaultOption)
+      setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cpDefault.defaultOption)))
+      setCpOptions(cpDefault.options)
       setIsCloudProviderFieldValid(ValidatedOptions.default)
     }
   }
@@ -561,6 +543,8 @@ const ProviderClusterProvisionPage = () => {
       setSelectedDBProvider(provider)
       console.log('provider')
       console.log(provider)
+      console.log('ProvisioningData')
+      console.log(provider.providerProvisioningData)
       if (provider.value === cockroachdbProviderType) {
         setSelectedProvisioningData(provider.providerProvisioningData)
         setDefaultProviderData(provider.providerProvisioningData)
@@ -604,13 +588,6 @@ const ProviderClusterProvisionPage = () => {
       })
   }
 
-  const toggle = (id) => {
-    const index = expanded.indexOf(id)
-    const newExpanded =
-      index >= 0 ? [...expanded.slice(0, index), ...expanded.slice(index + 1, expanded.length)] : [...expanded, id]
-    setExpanded(newExpanded)
-  }
-
   const handlePlanChange = (value) => {
     console.log('handlePlanChange')
     console.log(value)
@@ -621,120 +598,74 @@ const ProviderClusterProvisionPage = () => {
     }
     const selectedPlan = _.find(planOptions, (cpPlan) => cpPlan.displayValue === value)
     setPlan(selectedPlan)
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('plan', plan)))
+    console.log(providerChosenOptionsMap)
   }
 
   const handleRegionChange = (value) => {
-    const selectedRegion = _.find(regionsOptions, (cpRegion) => cpRegion.displayValue === value)
-    setRegion(selectedRegion)
+    console.log('handleRegionChange')
+
+    const selectedRegion = _.find(
+      filteredFieldsMap.get('regions').options,
+      (cpRegion) => cpRegion.displayValue === value
+    )
+    console.log(selectedRegion)
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('regions', selectedRegion)))
+
+    console.log(providerChosenOptionsMap)
   }
 
   const handleCPChange = (value) => {
+    console.log('handleCPChange')
+    console.log(value)
+    console.log(filteredFieldsMap)
     if (_.isEmpty(value)) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
       setIsCloudProviderFieldValid(ValidatedOptions.default)
     }
-    const selectedCP = _.find(cpOptions, (cp) => cp.displayValue === value)
+    const selectedCP = _.find(filteredFieldsMap.get('cloudProvider').options, (cp) => cp.displayValue === value)
     setCloudProvider(selectedCP)
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', selectedCP)))
+    console.log(providerChosenOptionsMap)
   }
 
-  const handleSpendLimitChange = (field, value) => {
+  const handleSpendLimitChange = (value) => {
     console.log('handleSpendLimitChange')
-    console.log(field)
     console.log(value)
     if (_.isEmpty(value)) {
       setIsSpendLimitFieldValid(ValidatedOptions.error)
     } else {
       setIsSpendLimitFieldValid(ValidatedOptions.default)
     }
-    setSpendLimit(value)
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('spendLimit', value)))
+
+    console.log(providerChosenOptionsMap)
   }
 
   const handleNodesChange = (value) => {
-    const selectedNodes = _.find(nodesOptions, (cpNodes) => cpNodes.displayValue === value)
-    setNodes(selectedNodes)
+    console.log('handleNodesChange')
+    const selectedNodes = _.find(filteredFieldsMap.get('nodes').options, (cpNodes) => cpNodes.displayValue === value)
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('nodes', selectedNodes)))
+    console.log(providerChosenOptionsMap)
   }
 
   const handleComputeChange = (value) => {
-    const selectedCompute = _.find(computeOptions, (cpCompute) => cpCompute.displayValue === value)
-    setCompute(selectedCompute)
+    const selectedCompute = _.find(
+      filteredFieldsMap.get('machineType').options,
+      (cpCompute) => cpCompute.displayValue === value
+    )
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('machineType', selectedCompute)))
+    console.log(providerChosenOptionsMap)
   }
 
   const handleStorageChange = (value) => {
-    const selectedStorage = _.find(storageOptions, (cpStorage) => cpStorage.displayValue === value)
-    setStorage(selectedStorage)
-  }
-
-  const generateField = (field) => {
-    console.log('generateField')
-    console.log(field)
-    if (field.control === 'editbox') {
-      return (
-        <FormGroup
-          label={field.displayName}
-          fieldId={field.name}
-          className="half-width-selection"
-          isRequired
-          helperTextInvalid="This is a required field"
-          validated={isSpendLimitFieldValid}
-        >
-          <TextInput
-            isRequired
-            type="text"
-            id={field.name}
-            name={field.name}
-            value="{field.name}"
-            onChange={(value) => {
-              field.value = value
-              handleSpendLimitChange(field, value)
-            }}
-            // onChange={handleSpendLimitChange}
-            validated={isSpendLimitFieldValid}
-          />
-        </FormGroup>
-      )
-    }
-    if (field.control === 'dropdown') {
-      return (
-        <FormGroup
-          label={field.displayName}
-          fieldId={field.name}
-          className="half-width-selection"
-          isRequired
-          helperTextInvalid="This is a required field"
-          validated={isRegionFieldValid}
-        >
-          <FormSelect
-            isRequired
-            value={region.displayValue}
-            onChange={handleRegionChange}
-            aria-label="regions"
-            validated={isRegionFieldValid}
-          >
-            {regionsOptions.map((option, index) => (
-              <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-            ))}
-          </FormSelect>
-        </FormGroup>
-      )
-    }
-    if (field.control === 'text') {
-    }
-  }
-
-  const displayField = (fieldName) => {
-    console.log('displayField')
-    console.log(fieldName)
-    console.log(filteredFields)
-    const resultNodes = filteredFields.find((item) => item.field === fieldName)
-    if (resultNodes !== undefined) {
-      console.log(resultNodes)
-      console.log(resultNodes.options)
-      console.log(providerFilteredDataMap)
-      console.log(providerFilteredDataMap.get(fieldName))
-    }
-    //   if does not exist it's undefined
-    return resultNodes
+    const selectedStorage = _.find(
+      filteredFieldsMap.get('storageGib').options,
+      (cpStorage) => cpStorage.displayValue === value
+    )
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('storageGib', selectedStorage)))
+    console.log(providerChosenOptionsMap)
   }
 
   const setDBProviderFields = () => {
@@ -842,131 +773,77 @@ const ProviderClusterProvisionPage = () => {
       }
       return (
         <>
-          <FormFieldGroup
-            className="half-width-selection"
-            header={
-              <FormFieldGroupHeader
-                titleText={{ text: 'Select a Plan', id: 'field-group4-non-expandable-titleText-id' }}
-                titleDescription=""
-              />
-            }
-          >
-            <FormGroup
-              label="Hosting plan"
-              fieldId="plan"
-              isRequired
-              helperTextInvalid="This is a required field"
-              validated={isPlanFieldValid}
-            >
-              <FormSelect
-                isRequired
-                value={plan.displayValue}
-                onChange={handlePlanChange}
-                aria-label="plan"
-                validated={isPlanFieldValid}
-              >
-                {planOptions.map((option, index) => (
-                  <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                ))}
-              </FormSelect>
-            </FormGroup>
-
-            <FormGroup
-              label="Cloud Provider"
-              fieldId="cloudprovider"
-              isRequired
-              helperTextInvalid="This is a required field"
-              validated={isCloudProviderFieldValid}
-            >
-              <FormSelect
-                isRequired
-                value={cloudProvider.displayValue}
-                onChange={handleCPChange}
-                aria-label="cloudprovider"
-                validated={isCloudProviderFieldValid}
-              >
-                {cpOptions.map((option, index) => (
-                  <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                ))}
-              </FormSelect>
-            </FormGroup>
-          </FormFieldGroup>
-
           {plan.displayValue === 'Serverless' ? (
             <>
-              {/* {filteredFields.map((field) => generateField(field))} */}
-              {/* <FormFieldGroup */}
-              {/*   className="half-width-selection" */}
-              {/*   header={ */}
-              {/*     <FormFieldGroupHeader */}
-              {/*       titleText={{ text: 'Select Regions', id: 'field-group4-non-expandable-titleText-id' }} */}
-              {/*       titleDescription="" */}
-              {/*     /> */}
-              {/*   } */}
-              {/* > */}
-              {/*   <FormGroup */}
-              {/*     label="Regions" */}
-              {/*     fieldId="serverless_regions" */}
-              {/*     isRequired */}
-              {/*     helperTextInvalid="This is a required field" */}
-              {/*     validated={isRegionFieldValid} */}
-              {/*     className={displayField('serverless_regions') === undefined ? 'hide' : 'none'} */}
-              {/*   > */}
-              {/*     <FormSelect */}
-              {/*       isRequired */}
-              {/*       value={ */}
-              {/*         providerFilteredDataMap.has('serverless_regions') === true */}
-              {/*           ? providerFilteredDataMap.get('serverless_regions').displayValue */}
-              {/*           : '' */}
-              {/*       } */}
-              {/*       // onChange={handleRegionChange} */}
-              {/*       onChange={(value) => { */}
-              {/*         providerFilteredDataMap.set( */}
-              {/*           'serverless_regions', */}
-              {/*           displayField('serverless_regions').options.find((item) => item.displayValue === value) */}
-              {/*         ) */}
-              {/*         console.log('onChange') */}
-              {/*         setProviderFilteredDataMap(providerFilteredDataMap) */}
-              {/*         setProviderFilteredDataMap(new Map(providerFilteredDataMap)) */}
-              {/*         console.log(providerFilteredDataMap) */}
-              {/*       }} */}
-              {/*       aria-label="serverless_regions" */}
-              {/*       validated={isRegionFieldValid} */}
-              {/*     > */}
-              {/*       {displayField('serverless_regions') !== undefined && */}
-              {/*         displayField('serverless_regions').options.map((option, index) => ( */}
-              {/*           <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} /> */}
-              {/*         ))} */}
-              {/*     </FormSelect> */}
-              {/*   </FormGroup> */}
-              {/* </FormFieldGroup> */}
-              {/* <FormFieldGroup */}
-              {/*   className="half-width-selection" */}
-              {/*   header={ */}
-              {/*     <FormFieldGroupHeader */}
-              {/*       titleText={{ text: 'Spend Limit', id: 'field-group4-non-expandable-titleText-id' }} */}
-              {/*       titleDescription="Field group description text." */}
-              {/*     /> */}
-              {/*   } */}
-              {/* > */}
-              {/*   <FormGroup */}
-              {/*     label="Spend Limit" */}
-              {/*     fieldId="spend-limit" */}
-              {/*     isRequired */}
-              {/*     helperTextInvalid="This is a required field" */}
-              {/*     validated={isSpendLimitFieldValid} */}
-              {/*   > */}
-              {/*     <TextInput */}
-              {/*       isRequired */}
-              {/*       type="text" */}
-              {/*       id="spend-limit" */}
-              {/*       name="spend-limit" */}
-              {/*       value={spendLimit} */}
-              {/*       onChange={handleSpendLimitChange} */}
-              {/*       validated={isSpendLimitFieldValid} */}
-              {/*     /> */}
-              {/*   </FormGroup> */}
-              {/* </FormFieldGroup> */}
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{
+                      text: selectedProvisioningData.serverlessLocationLabel.displayName,
+                      id: 'field-group4-non-expandable-titleText-id',
+                    }}
+                    titleDescription={selectedProvisioningData.serverlessLocationLabel.helpText}
+                  />
+                }
+              >
+                <FormGroup
+                  label={selectedProvisioningData.regions.displayName}
+                  fieldId="regions"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isRegionFieldValid}
+                  // className={displayField('serverless_regions') === undefined ? 'hide' : 'none'}
+                >
+                  <FormSelect
+                    isRequired
+                    value={
+                      providerChosenOptionsMap.get('regions') !== undefined &&
+                      providerChosenOptionsMap.get('regions').displayValue
+                    }
+                    onChange={handleRegionChange}
+                    aria-label="regions"
+                    validated={isRegionFieldValid}
+                  >
+                    {filteredFieldsMap.get('regions') !== undefined &&
+                      filteredFieldsMap
+                        .get('regions')
+                        .options.map((option, index) => (
+                          <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                        ))}
+                  </FormSelect>
+                </FormGroup>
+              </FormFieldGroup>
+              <FormFieldGroup
+                className="half-width-selection"
+                header={
+                  <FormFieldGroupHeader
+                    titleText={{
+                      text: selectedProvisioningData.spendLimitLabel.displayName,
+                      id: 'field-group4-non-expandable-titleText-id',
+                    }}
+                    titleDescription={selectedProvisioningData.spendLimitLabel.helpText}
+                  />
+                }
+              >
+                <FormGroup
+                  label={selectedProvisioningData.spendLimit.displayName}
+                  fieldId="spendLimit"
+                  isRequired
+                  helperTextInvalid="This is a required field"
+                  validated={isSpendLimitFieldValid}
+                >
+                  <TextInput
+                    isRequired
+                    type="text"
+                    id="spendLimit"
+                    name="spendLimit"
+                    value={providerChosenOptionsMap.get('spendLimit')}
+                    onChange={handleSpendLimitChange}
+                    validated={isSpendLimitFieldValid}
+                  />
+                </FormGroup>
+              </FormFieldGroup>
             </>
           ) : (
             <>
@@ -975,34 +852,41 @@ const ProviderClusterProvisionPage = () => {
                 header={
                   <FormFieldGroupHeader
                     titleText={{
-                      text: 'Regions & Nodes',
+                      text: selectedProvisioningData.dedicatedLocationLabel.displayName,
                       id: 'field-group4-non-expandable-titleText-id',
                     }}
-                    titleDescription="Field group description text."
+                    titleDescription={selectedProvisioningData.dedicatedLocationLabel.helpText}
                   />
                 }
               >
                 <FormGroup
-                  label="Region"
+                  label={selectedProvisioningData.regions.displayName}
                   fieldId="regions"
                   isRequired
                   helperTextInvalid="This is a required field"
                   validated={isRegionFieldValid}
+                  // className={displayField('serverless_regions') === undefined ? 'hide' : 'none'}
                 >
                   <FormSelect
                     isRequired
-                    value={region.displayValue}
+                    value={
+                      providerChosenOptionsMap.get('regions') !== undefined &&
+                      providerChosenOptionsMap.get('regions').displayValue
+                    }
                     onChange={handleRegionChange}
                     aria-label="regions"
                     validated={isRegionFieldValid}
                   >
-                    {regionsOptions.map((option, index) => (
-                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                    ))}
+                    {filteredFieldsMap.get('regions') !== undefined &&
+                      filteredFieldsMap
+                        .get('regions')
+                        .options.map((option, index) => (
+                          <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                        ))}
                   </FormSelect>
                 </FormGroup>
                 <FormGroup
-                  label="Nodes"
+                  label={selectedProvisioningData.nodes.displayName}
                   fieldId="nodes"
                   isRequired
                   // className="half-width-selection"
@@ -1011,14 +895,20 @@ const ProviderClusterProvisionPage = () => {
                 >
                   <FormSelect
                     isRequired
-                    value={nodes.displayValue}
+                    value={
+                      providerChosenOptionsMap.get('nodes') !== undefined &&
+                      providerChosenOptionsMap.get('nodes').displayValue
+                    }
                     onChange={handleNodesChange}
                     aria-label="nodes"
                     validated={isNodesFieldValid}
                   >
-                    {nodesOptions.map((option, index) => (
-                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                    ))}
+                    {filteredFieldsMap.get('nodes') !== undefined &&
+                      filteredFieldsMap
+                        .get('nodes')
+                        .options.map((option, index) => (
+                          <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                        ))}
                   </FormSelect>
                 </FormGroup>
               </FormFieldGroup>
@@ -1026,47 +916,62 @@ const ProviderClusterProvisionPage = () => {
                 className="half-width-selection"
                 header={
                   <FormFieldGroupHeader
-                    titleText={{ text: 'Hardware', id: 'field-group4-non-expandable-titleText-id' }}
-                    titleDescription="Field group description text."
+                    titleText={{
+                      text: selectedProvisioningData.hardwareLabel.displayName,
+                      id: 'field-group4-non-expandable-titleText-id',
+                    }}
+                    titleDescription={selectedProvisioningData.hardwareLabel.helpText}
                   />
                 }
               >
                 <FormGroup
-                  label="Compute"
-                  fieldId="compute"
+                  label={selectedProvisioningData.machineType.displayName}
+                  fieldId="machineType"
                   isRequired
                   helperTextInvalid="This is a required field"
                   validated={isComputeFieldValid}
                 >
                   <FormSelect
                     isRequired
-                    value={compute.displayValue}
+                    value={
+                      providerChosenOptionsMap.get('machineType') !== undefined &&
+                      providerChosenOptionsMap.get('machineType').displayValue
+                    }
                     onChange={handleComputeChange}
-                    aria-label="compute"
+                    aria-label="machineType"
                     validated={isComputeFieldValid}
                   >
-                    {computeOptions.map((option, index) => (
-                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                    ))}
+                    {filteredFieldsMap.get('machineType') !== undefined &&
+                      filteredFieldsMap
+                        .get('machineType')
+                        .options.map((option, index) => (
+                          <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                        ))}
                   </FormSelect>
                 </FormGroup>
                 <FormGroup
-                  label="Storage"
-                  fieldId="storage"
+                  label={selectedProvisioningData.storageGib.displayName}
+                  fieldId="storageGib"
                   isRequired
                   helperTextInvalid="This is a required field"
                   validated={isStorageFieldValid}
                 >
                   <FormSelect
                     isRequired
-                    value={storage.displayValue}
+                    value={
+                      providerChosenOptionsMap.get('storageGib') !== undefined &&
+                      providerChosenOptionsMap.get('storageGib').displayValue
+                    }
                     onChange={handleStorageChange}
-                    aria-label="storage"
+                    aria-label="storageGib"
                     validated={isStorageFieldValid}
                   >
-                    {storageOptions.map((option, index) => (
-                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                    ))}
+                    {filteredFieldsMap.get('storageGib') !== undefined &&
+                      filteredFieldsMap
+                        .get('storageGib')
+                        .options.map((option, index) => (
+                          <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                        ))}
                   </FormSelect>
                 </FormGroup>
               </FormFieldGroup>
@@ -1083,139 +988,50 @@ const ProviderClusterProvisionPage = () => {
     console.log('setProviderData')
     selections.set('cloudProvider', cloudProvider.value)
     selections.set('plan', plan.value)
-    providerFilteredDataMap.clear()
-    setFilteredFields([])
+    filteredFieldsMap.clear()
+    providerChosenOptionsMap.clear()
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('plan', plan)))
+    setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProvider)))
+
+    //setFilteredFields([])
     const matchedFields = []
     console.log(selectedProvisioningData)
+    console.log('selectionsMap')
+    console.log(selections)
 
     Object.keys(selectedProvisioningData).map((key) => {
-      console.log(selectedProvisioningData[key])
+      // console.log(selectedProvisioningData[key])
       const item = selectedProvisioningData[key]
       if (item.optionsLists !== undefined) {
-        console.log('optionLists is not Undefined')
-        //    for (const optionsListItem of item.optionsLists) {
-        //  if (optionsListItem.dependencies !== undefined) {
+        //    console.log('optionLists is not Undefined')
         if (item.optionsLists[0].dependencies !== undefined) {
-          console.log('dependencies are not Undefined')
+          //       console.log('dependencies are not Undefined')
           // console.log(optionsListItem.dependencies)
           const matchedDependencies = filterSelected(item.optionsLists, selections)
           if (matchedDependencies !== undefined) {
-            console.log(item.key)
-            setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(key, matchedDependencies.defaultOption)))
+            // console.log('matchedDependencies')
+            // console.log(matchedDependencies)
+            if (key !== 'cloudProvider') {
+              setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultOption)))
+            }
+            // map with filtered data of drop downs available options.
+            setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
           }
         }
-        //  }
       }
     })
 
-    console.log('providerFilteredDataMap')
-    console.log(providerFilteredDataMap)
-    // Object.entries(selectedProvisioningData).forEach((entry) => {
-    //   console.log(entry)
-    //   console.log(entry.displayName)
-    // })
+    // set Serverless default values for input fields that don't have dependencies.
+    if (plan.value === 'SERVERLESS') {
+      setProviderChosenOptionsMap(
+        new Map(providerChosenOptionsMap.set('spendLimit', selectedProvisioningData.spendLimit.defaultValue))
+      )
+    }
 
-    // for (const item of selectedDBProvider.providerProvisioningData) {
-    //   if (item.dependencies !== undefined) {
-    //     const matchedDependencies = filterSelected(item, selections)
-    //     console.log('matchedDependencies')
-    //     console.log(matchedDependencies)
-    //     console.log(item)
-    //     if (matchedDependencies === true) {
-    //       matchedFields.push(item)
-    //       setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(item.field, item.defaultOption)))
-    //     }
-    //   }
-    // }
-
-    // for (const item of selectedDBProvider.defaultData) {
-    //   if (item.dependencies !== undefined) {
-    //     const matchedDependencies = filterSelected(item, selections)
-    //     console.log('matchedDependencies')
-    //     console.log(matchedDependencies)
-    //     console.log(item)
-    //     if (matchedDependencies === true) {
-    //       filteredFields.push(item)
-    //       const unfilteredDataList = selectedDBProvider.providerProvisioningData.filter((dataItem) => dataItem.field === item.name)
-    //       unfilteredDataList.forEach((element) => {
-    //         if(){
-    //
-    //         }
-    //         const obj = {id: 0, name: '', namespace: '', instances: [], status: {}}
-    //         obj.id = index
-    //         obj.name = inventory.metadata.name
-    //         obj.namespace = inventory.metadata.namespace
-    //         obj.status = inventory.status
-    //       }
-    //       for (const element of unfilteredDataList) {
-    //         const matchedData = filterSelected(element, selections)
-    //         if(matchedData === true){
-    //           setProviderFilteredDataMap(new Map(providerFilteredDataMap.set(item.name, element)))
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-
-    // setFilteredFields([...matchedFields])
-    // console.log('matchedFields')
-    // console.log(matchedFields)
-
-    // console.log(mergedData)
-    // const filteredSelectedData = []
-    // for (const item of mergedData) {
-    //   if (item.dependencies !== undefined) {
-    //     const filteredFields = filterSelected(item, selections)
-    //     console.log('filteredFields')
-    //     console.log(filteredFields)
-    //     console.log(filteredFields.length)
-    //     if (filteredFields.length !== 0) {
-    //       filteredSelectedData.push(filteredFields)
-    //     }
-    //   }
-    // }
-    // console.log('filteredSelectedData')
-    // console.log(filteredSelectedData)
-
-    // const resultRegionsUnfiltered = selectedProvisioningData.filter((item) => item.field === 'regions')
-    // const filteredRegions = filterSelected(resultRegionsUnfiltered, selections)
-    // if (filteredRegions?.options.isEmpty) {
-    //   setIsRegionFieldValid(ValidatedOptions.error)
-    // } else {
-    //   setRegionsOptions(filteredRegions.options)
-    //   setRegion(filteredRegions.defaultOption)
-    //   setIsRegionFieldValid(ValidatedOptions.default)
-    // }
-    // if (plan.value === 'DEDICATED') {
-    //   // Setting Dedicated values
-    //   const resultNodes = selectedProvisioningData.find((item) => item.field === 'nodes')
-    //   if (resultNodes?.options.isEmpty) {
-    //     setIsNodesFieldValid(ValidatedOptions.error)
-    //   } else {
-    //     setNodesOptions(resultNodes.options)
-    //     setNodes(resultNodes.defaultOption)
-    //     setIsNodesFieldValid(ValidatedOptions.default)
-    //   }
-    //
-    //   const resultComputeUnfiltered = selectedProvisioningData.filter((item) => item.field === 'machine_type')
-    //   const filteredCompute = filterSelected(resultComputeUnfiltered, selections)
-    //   if (filteredCompute?.options.isEmpty) {
-    //     setIsComputeFieldValid(ValidatedOptions.error)
-    //   } else {
-    //     setComputeOptions(filteredCompute.options)
-    //     setCompute(filteredCompute.defaultOption)
-    //     setIsComputeFieldValid(ValidatedOptions.default)
-    //   }
-    //
-    //   const resultStorage = selectedProvisioningData.find((item) => item.field === 'storage_gib')
-    //   if (resultStorage?.options.isEmpty) {
-    //     setIsStorageFieldValid(ValidatedOptions.error)
-    //   } else {
-    //     setStorageOptions(resultStorage.options)
-    //     setStorage(resultStorage.defaultOption)
-    //     setIsStorageFieldValid(ValidatedOptions.default)
-    //   }
-    // }
+    console.log('providerChosenOptionsMap')
+    console.log(providerChosenOptionsMap)
+    console.log('filteredFieldsMap')
+    console.log(filteredFieldsMap)
   }
 
   React.useEffect(() => {
@@ -1419,6 +1235,60 @@ const ProviderClusterProvisionPage = () => {
                         </HelperTextItem>
                       </HelperText>
                     </FormGroup>
+
+                    <FormFieldGroup
+                      className="half-width-selection"
+                      header={
+                        <FormFieldGroupHeader
+                          titleText={{
+                            text: selectedProvisioningData.planLabel.displayName,
+                            id: 'field-group4-non-expandable-titleText-id',
+                          }}
+                          titleDescription=""
+                        />
+                      }
+                    >
+                      <FormGroup
+                        label={selectedProvisioningData.plan.displayName}
+                        fieldId="plan"
+                        isRequired
+                        helperTextInvalid="This is a required field"
+                        validated={isPlanFieldValid}
+                      >
+                        <FormSelect
+                          isRequired
+                          value={plan.displayValue}
+                          onChange={handlePlanChange}
+                          aria-label="plan"
+                          validated={isPlanFieldValid}
+                        >
+                          {planOptions.map((option, index) => (
+                            <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                          ))}
+                        </FormSelect>
+                      </FormGroup>
+
+                      <FormGroup
+                        label={selectedProvisioningData.cloudProvider.displayName}
+                        fieldId="cloudProvider"
+                        isRequired
+                        helperTextInvalid="This is a required field"
+                        validated={isCloudProviderFieldValid}
+                      >
+                        <FormSelect
+                          isRequired
+                          value={cloudProvider.displayValue}
+                          onChange={handleCPChange}
+                          aria-label="cloudProvider"
+                          validated={isCloudProviderFieldValid}
+                        >
+                          {cpOptions.map((option, index) => (
+                                <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                              ))}
+                        </FormSelect>
+                      </FormGroup>
+                    </FormFieldGroup>
+
                     {setDBProviderFields()}
                     <ActionGroup>
                       <Button id="cluster-provision-button" variant="primary" type="submit" isDisabled={!isFormValid}>
