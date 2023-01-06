@@ -267,20 +267,19 @@ const ProviderClusterProvisionPage = () => {
     } else if (selectedDBProvider.value === cockroachdbProviderType) {
       if (plan.value === 'SERVERLESS') {
         otherInstanceParams = {
-          cloud_provider: cloudProvider.key,
-          plan: plan.key,
-          region: region.key,
-          spendLimit: spendLimit.key,
+          cloudProvider: providerChosenOptionsMap.get('cloudProvider').value,
+          plan: providerChosenOptionsMap.get('plan').value,
+          regions: providerChosenOptionsMap.get('regions').value,
+          spendLimit: providerChosenOptionsMap.get('spendLimit').value,
         }
       } else if (plan.value === 'DEDICATED') {
         otherInstanceParams = {
-          cloud_provider: cloudProvider.key,
-          plan: plan.key,
-          region: region.key,
-          nodes: nodes.key,
-          machine_type: compute.key,
-          storage_gib: storage.key,
-          spendLimit: spendLimit.key,
+          cloudProvider: providerChosenOptionsMap.get('cloudProvider').value,
+          plan: providerChosenOptionsMap.get('plan').value,
+          regions: providerChosenOptionsMap.get('regions').value,
+          nodes: providerChosenOptionsMap.get('nodes').value,
+          machineType: providerChosenOptionsMap.get('machineType').value,
+          storageGib: providerChosenOptionsMap.get('storageGib').value,
         }
       } else {
         otherInstanceParams = {}
