@@ -523,8 +523,8 @@ const ProviderClusterProvisionPage = () => {
       console.log('cloudProviderDefault')
       console.log(cloudProviderDefault)
       setCloudProvider(cloudProviderDefault)
-      setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProviderDefault)))
       setCpOptions(cpDefault.options)
+      setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProviderDefault)))
       setIsCloudProviderFieldValid(ValidatedOptions.default)
     }
   }
@@ -1058,11 +1058,11 @@ const ProviderClusterProvisionPage = () => {
     isEngineFieldValid,
     isPlanFieldValid,
     isCloudProviderFieldValid,
-    isRegionFieldValid,
-    isSpendLimitFieldValid,
-    isComputeFieldValid,
-    isStorageFieldValid,
-    isNodesFieldValid,
+    // isRegionFieldValid,
+    // isSpendLimitFieldValid,
+    // isComputeFieldValid,
+    // isStorageFieldValid,
+    // isNodesFieldValid,
   ])
 
   React.useEffect(() => {
