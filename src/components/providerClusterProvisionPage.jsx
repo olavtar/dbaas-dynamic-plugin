@@ -482,58 +482,57 @@ const ProviderClusterProvisionPage = () => {
 
   const filterSelected = (unfilteredList, selections) => {
     let matchedItem
-    //console.log('filterSelected')
+    // console.log('filterSelected')
     // console.log(unfilteredList)
     // console.log(selections)
 
     filterLoop: for (const item of unfilteredList) {
-      for (const dependsItem of item.dependencies) {
-        if (dependsItem.value !== selections.get(dependsItem.field)) {
-          continue filterLoop
+      if (item.dependencies !== undefined) {
+        for (const dependsItem of item.dependencies) {
+          if (dependsItem.value !== selections.get(dependsItem.field)) {
+            continue filterLoop
+          }
         }
       }
       matchedItem = item
     }
-
-    // console.log('matchedItem')
-    // console.log(matchedItem)
     return matchedItem
   }
 
   const setDefaultProviderData = (providerProvisioningData) => {
     console.log('setDefaultProviderData')
     // setting plan options and initial value
-    console.log('plan')
+    console.log('defatulPlan')
 
     const selections = new Map()
 
-    if (providerProvisioningData.plan?.optionsLists[0]?.defaultOption === undefined) {
+    if (providerProvisioningData.plan?.conditionalData[0].defaultValue === undefined) {
       setIsPlanFieldValid(ValidatedOptions.error)
     } else {
-      setPlan(providerProvisioningData.plan.optionsLists[0].defaultOption)
-      setPlanOptions(providerProvisioningData.plan.optionsLists[0].options)
+      const defatulPlan = _.find(
+        providerProvisioningData.plan?.conditionalData[0].options,
+        (item) => item.value === providerProvisioningData.plan?.conditionalData[0].defaultValue
+      )
+      console.log(defatulPlan)
+      setPlan(defatulPlan)
+      setPlanOptions(providerProvisioningData.plan.conditionalData[0].options)
       setIsPlanFieldValid(ValidatedOptions.default)
-      selections.set('plan', providerProvisioningData.plan.optionsLists[0].defaultOption)
+      selections.set('plan', defatulPlan.value)
     }
-
+    console.log(selections)
     // setting cloud provider options and initial value
-    console.log('cloudProvider')
-    let cpDefault
-    filterLoop: for (const item of providerProvisioningData.cloudProvider.optionsLists) {
-      for (const dependsItem of item.dependencies) {
-        if (dependsItem.value !== selections.get(dependsItem.field).value) {
-          continue filterLoop
-        }
-      }
-      cpDefault = item
-    }
+    console.log('cloudProvider cpDefault')
+    const cpDefault = filterSelected(providerProvisioningData.cloudProvider.conditionalData, selections)
 
     console.log(cpDefault)
-    if (cpDefault.defaultOption === undefined) {
+    if (cpDefault.defaultValue === undefined) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
-      setCloudProvider(cpDefault.defaultOption)
-      setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cpDefault.defaultOption)))
+      const cloudProviderDefault = _.find(cpDefault.options, (item) => item.value === cpDefault.defaultValue)
+      console.log('cloudProviderDefault')
+      console.log(cloudProviderDefault)
+      setCloudProvider(cloudProviderDefault)
+      setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProviderDefault)))
       setCpOptions(cpDefault.options)
       setIsCloudProviderFieldValid(ValidatedOptions.default)
     }
@@ -551,8 +550,6 @@ const ProviderClusterProvisionPage = () => {
       setSelectedDBProvider(provider)
       console.log('provider')
       console.log(provider)
-      console.log('ProvisioningData')
-      console.log(provider.providerProvisioningData)
       if (provider.value === cockroachdbProviderType) {
         setSelectedProvisioningData(provider.providerProvisioningData)
         setDefaultProviderData(provider.providerProvisioningData)
@@ -1001,40 +998,39 @@ const ProviderClusterProvisionPage = () => {
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('plan', plan)))
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProvider)))
 
-    //setFilteredFields([])
-    const matchedFields = []
     console.log(selectedProvisioningData)
     console.log('selectionsMap')
     console.log(selections)
 
     Object.keys(selectedProvisioningData).map((key) => {
       // console.log(selectedProvisioningData[key])
+      console.log('key')
+      console.log(key)
       const item = selectedProvisioningData[key]
-      if (item.optionsLists !== undefined) {
-        //    console.log('optionLists is not Undefined')
-        if (item.optionsLists[0].dependencies !== undefined) {
-          //       console.log('dependencies are not Undefined')
-          // console.log(optionsListItem.dependencies)
-          const matchedDependencies = filterSelected(item.optionsLists, selections)
-          if (matchedDependencies !== undefined) {
-            // console.log('matchedDependencies')
-            // console.log(matchedDependencies)
-            if (key !== 'cloudProvider') {
-              setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultOption)))
+      if (item.conditionalData !== undefined) {
+        const matchedDependencies = filterSelected(item.conditionalData, selections)
+        if (matchedDependencies !== undefined) {
+          console.log('matchedDependencies')
+          console.log(matchedDependencies)
+          if (key !== 'cloudProvider' && key !== 'plan') {
+            if (matchedDependencies.options !== undefined) {
+              setProviderChosenOptionsMap(
+                new Map(
+                  providerChosenOptionsMap.set(
+                    key,
+                    _.find(matchedDependencies.options, (option) => option.value === matchedDependencies.defaultValue)
+                  )
+                )
+              )
+            } else {
+              setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultValue)))
             }
-            // map with filtered data of drop downs available options.
-            setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
           }
+          // map with filtered data of drop downs available options.
+          setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
         }
       }
     })
-
-    // set Serverless default values for input fields that don't have dependencies.
-    if (plan.value === 'SERVERLESS') {
-      setProviderChosenOptionsMap(
-        new Map(providerChosenOptionsMap.set('spendLimit', selectedProvisioningData.spendLimit.defaultValue))
-      )
-    }
 
     console.log('providerChosenOptionsMap')
     console.log(providerChosenOptionsMap)
@@ -1291,8 +1287,8 @@ const ProviderClusterProvisionPage = () => {
                           validated={isCloudProviderFieldValid}
                         >
                           {cpOptions.map((option, index) => (
-                                <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
-                              ))}
+                            <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                          ))}
                         </FormSelect>
                       </FormGroup>
                     </FormFieldGroup>
