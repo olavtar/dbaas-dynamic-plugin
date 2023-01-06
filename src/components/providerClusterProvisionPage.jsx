@@ -414,7 +414,9 @@ const ProviderClusterProvisionPage = () => {
     let isValid =
       isDBProviderFieldValid === ValidatedOptions.default &&
       isInventoryFieldValid === ValidatedOptions.default &&
-      isInstanceNameFieldValid === ValidatedOptions.default
+      isInstanceNameFieldValid === ValidatedOptions.default &&
+      isPlanFieldValid === ValidatedOptions.default &&
+      isCloudProviderFieldValid === ValidatedOptions.default
 
     if (selectedDBProvider.value === mongoProviderType) {
       isValid = isValid && isProjectNameFieldValid === ValidatedOptions.default
@@ -422,10 +424,8 @@ const ProviderClusterProvisionPage = () => {
     if (selectedDBProvider.value === rdsProviderType) {
       isValid = isValid && isEngineFieldValid === ValidatedOptions.default
     }
-    // if (selectedDBProvider.value === cockroachdbProviderType) {
-    //   isValid =
-    //     isValid &&
-    //     isPlanFieldValid === ValidatedOptions.default &&
+    //  if (selectedDBProvider.value === cockroachdbProviderType) {
+    //isValid = isValid && isPlanFieldValid === ValidatedOptions.default
     //     isCloudProviderFieldValid === ValidatedOptions.default &&
     //     isRegionFieldValid === ValidatedOptions.default
     //   if (plan.value === 'SERVERLESS') {
@@ -437,7 +437,7 @@ const ProviderClusterProvisionPage = () => {
     //       isNodesFieldValid === ValidatedOptions.default &&
     //       isStorageFieldValid === ValidatedOptions.default
     //   }
-    // }
+    //  }
     setIsFormValid(isValid)
   }
 
