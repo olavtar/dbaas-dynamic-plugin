@@ -22,6 +22,7 @@ import {
   Popover,
   FormFieldGroup,
   FormFieldGroupHeader,
+  FormSection,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
 import FormHeader from './form/formHeader'
@@ -258,22 +259,24 @@ const ProviderClusterProvisionPage = () => {
 
     if (!isFormValid) return
 
-    let otherInstanceParams = {}
+    let provisioningParameters = {}
 
     if (selectedDBProvider.value === mongoProviderType) {
-      otherInstanceParams = { projectName }
+      provisioningParameters = { projectName }
     } else if (selectedDBProvider.value === rdsProviderType) {
-      otherInstanceParams = { Engine: engine.value }
+      provisioningParameters = { Engine: engine.value }
     } else if (selectedDBProvider.value === cockroachdbProviderType) {
       if (plan.value === 'SERVERLESS') {
-        otherInstanceParams = {
+        provisioningParameters = {
+          name: clusterName,
           cloudProvider: providerChosenOptionsMap.get('cloudProvider').value,
           plan: providerChosenOptionsMap.get('plan').value,
           regions: providerChosenOptionsMap.get('regions').value,
-          spendLimit: providerChosenOptionsMap.get('spendLimit').value,
+          spendLimit: providerChosenOptionsMap.get('spendLimit'),
         }
       } else if (plan.value === 'DEDICATED') {
-        otherInstanceParams = {
+        provisioningParameters = {
+          name: clusterName,
           cloudProvider: providerChosenOptionsMap.get('cloudProvider').value,
           plan: providerChosenOptionsMap.get('plan').value,
           regions: providerChosenOptionsMap.get('regions').value,
@@ -282,9 +285,12 @@ const ProviderClusterProvisionPage = () => {
           storageGib: providerChosenOptionsMap.get('storageGib').value,
         }
       } else {
-        otherInstanceParams = {}
+        provisioningParameters = {}
       }
     }
+
+    console.log('provisioningParameters')
+    console.log(provisioningParameters)
 
     const requestOpts = {
       method: 'POST',
@@ -306,10 +312,13 @@ const ProviderClusterProvisionPage = () => {
             name: selectedInventory.name,
             namespace: selectedInventory.namespace,
           },
-          otherInstanceParams,
+          provisioningParameters,
         },
       }),
     }
+
+    console.log('requestOpts')
+    console.log(requestOpts)
 
     setShowResults(false)
     setLoadingMsg('Creating Database Instance...')
@@ -771,18 +780,12 @@ const ProviderClusterProvisionPage = () => {
         <>
           {plan.displayValue === 'Serverless' ? (
             <>
-              <FormFieldGroup
+              <FormSection
+                title={selectedProvisioningData.serverlessLocationLabel.displayName}
+                titleElement="h2"
                 className="half-width-selection"
-                header={
-                  <FormFieldGroupHeader
-                    titleText={{
-                      text: selectedProvisioningData.serverlessLocationLabel.displayName,
-                      id: 'field-group4-non-expandable-titleText-id',
-                    }}
-                    titleDescription={selectedProvisioningData.serverlessLocationLabel.helpText}
-                  />
-                }
               >
+                <helpText>{selectedProvisioningData.serverlessLocationLabel.helpText}</helpText>
                 <FormGroup
                   label={selectedProvisioningData.regions.displayName}
                   fieldId="regions"
@@ -809,19 +812,13 @@ const ProviderClusterProvisionPage = () => {
                         ))}
                   </FormSelect>
                 </FormGroup>
-              </FormFieldGroup>
-              <FormFieldGroup
+              </FormSection>
+              <FormSection
+                title={selectedProvisioningData.spendLimitLabel.displayName}
+                titleElement="h2"
                 className="half-width-selection"
-                header={
-                  <FormFieldGroupHeader
-                    titleText={{
-                      text: selectedProvisioningData.spendLimitLabel.displayName,
-                      id: 'field-group4-non-expandable-titleText-id',
-                    }}
-                    titleDescription={selectedProvisioningData.spendLimitLabel.helpText}
-                  />
-                }
               >
+                <helpText>{selectedProvisioningData.spendLimitLabel.helpText}</helpText>
                 <FormGroup
                   label={selectedProvisioningData.spendLimit.displayName}
                   fieldId="spendLimit"
@@ -839,22 +836,16 @@ const ProviderClusterProvisionPage = () => {
                     validated={isSpendLimitFieldValid}
                   />
                 </FormGroup>
-              </FormFieldGroup>
+              </FormSection>
             </>
           ) : (
             <>
-              <FormFieldGroup
+              <FormSection
+                title={selectedProvisioningData.dedicatedLocationLabel.displayName}
+                titleElement="h2"
                 className="half-width-selection"
-                header={
-                  <FormFieldGroupHeader
-                    titleText={{
-                      text: selectedProvisioningData.dedicatedLocationLabel.displayName,
-                      id: 'field-group4-non-expandable-titleText-id',
-                    }}
-                    titleDescription={selectedProvisioningData.dedicatedLocationLabel.helpText}
-                  />
-                }
               >
+                <helpText>{selectedProvisioningData.dedicatedLocationLabel.helpText}</helpText>
                 <FormGroup
                   label={selectedProvisioningData.regions.displayName}
                   fieldId="regions"
@@ -907,19 +898,13 @@ const ProviderClusterProvisionPage = () => {
                         ))}
                   </FormSelect>
                 </FormGroup>
-              </FormFieldGroup>
-              <FormFieldGroup
+              </FormSection>
+              <FormSection
+                title={selectedProvisioningData.hardwareLabel.displayName}
+                titleElement="h2"
                 className="half-width-selection"
-                header={
-                  <FormFieldGroupHeader
-                    titleText={{
-                      text: selectedProvisioningData.hardwareLabel.displayName,
-                      id: 'field-group4-non-expandable-titleText-id',
-                    }}
-                    titleDescription={selectedProvisioningData.hardwareLabel.helpText}
-                  />
-                }
               >
+                <helpText>{selectedProvisioningData.hardwareLabel.helpText}</helpText>
                 <FormGroup
                   label={selectedProvisioningData.machineType.displayName}
                   fieldId="machineType"
@@ -970,7 +955,7 @@ const ProviderClusterProvisionPage = () => {
                         ))}
                   </FormSelect>
                 </FormGroup>
-              </FormFieldGroup>
+              </FormSection>
             </>
           )}
         </>
@@ -1208,7 +1193,7 @@ const ProviderClusterProvisionPage = () => {
                 ) : (
                   <>
                     <FormGroup
-                      label="Instance Name"
+                      label={selectedProvisioningData.name.displayName}
                       fieldId="instance-name"
                       isRequired
                       className="half-width-selection"
@@ -1230,18 +1215,10 @@ const ProviderClusterProvisionPage = () => {
                         </HelperTextItem>
                       </HelperText>
                     </FormGroup>
-
-                    <FormFieldGroup
+                    <FormSection
+                      title={selectedProvisioningData.planLabel.displayName}
+                      titleElement="h2"
                       className="half-width-selection"
-                      header={
-                        <FormFieldGroupHeader
-                          titleText={{
-                            text: selectedProvisioningData.planLabel.displayName,
-                            id: 'field-group4-non-expandable-titleText-id',
-                          }}
-                          titleDescription=""
-                        />
-                      }
                     >
                       <FormGroup
                         label={selectedProvisioningData.plan.displayName}
@@ -1282,7 +1259,7 @@ const ProviderClusterProvisionPage = () => {
                           ))}
                         </FormSelect>
                       </FormGroup>
-                    </FormFieldGroup>
+                    </FormSection>
 
                     {setDBProviderFields()}
                     <ActionGroup>
