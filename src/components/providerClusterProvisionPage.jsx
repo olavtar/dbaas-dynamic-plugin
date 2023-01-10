@@ -794,7 +794,11 @@ const ProviderClusterProvisionPage = () => {
                 titleElement="h2"
                 className="half-width-selection"
               >
-                <helpText>{selectedProvisioningData.serverlessLocationLabel.helpText}</helpText>
+                <HelperText>
+                  <HelperTextItem variant="indeterminate">
+                    {selectedProvisioningData.serverlessLocationLabel.helpText}
+                  </HelperTextItem>
+                </HelperText>
                 <FormGroup
                   label={selectedProvisioningData.regions.displayName}
                   fieldId="regions"
@@ -827,7 +831,11 @@ const ProviderClusterProvisionPage = () => {
                 titleElement="h2"
                 className="half-width-selection"
               >
-                <helpText>{selectedProvisioningData.spendLimitLabel.helpText}</helpText>
+                <HelperText>
+                  <HelperTextItem variant="indeterminate">
+                    {selectedProvisioningData.spendLimitLabel.helpText}
+                  </HelperTextItem>
+                </HelperText>
                 <FormGroup
                   label={selectedProvisioningData.spendLimit.displayName}
                   fieldId="spendLimit"
@@ -854,7 +862,11 @@ const ProviderClusterProvisionPage = () => {
                 titleElement="h2"
                 className="half-width-selection"
               >
-                <helpText>{selectedProvisioningData.dedicatedLocationLabel.helpText}</helpText>
+                <HelperText>
+                  <HelperTextItem variant="indeterminate">
+                    {selectedProvisioningData.dedicatedLocationLabel.helpText}
+                  </HelperTextItem>
+                </HelperText>
                 <FormGroup
                   label={selectedProvisioningData.regions.displayName}
                   fieldId="regions"
@@ -913,7 +925,11 @@ const ProviderClusterProvisionPage = () => {
                 titleElement="h2"
                 className="half-width-selection"
               >
-                <helpText>{selectedProvisioningData.hardwareLabel.helpText}</helpText>
+                <HelperText>
+                  <HelperTextItem variant="indeterminate">
+                    {selectedProvisioningData.hardwareLabel.helpText}
+                  </HelperTextItem>
+                </HelperText>
                 <FormGroup
                   label={selectedProvisioningData.machineType.displayName}
                   fieldId="machineType"
