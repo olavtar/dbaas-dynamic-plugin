@@ -499,8 +499,6 @@ const ProviderClusterProvisionPage = () => {
   const setDefaultProviderData = (providerProvisioningData) => {
     console.log('setDefaultProviderData')
     // setting plan options and initial value
-    console.log('defatulPlan')
-
     const selections = new Map()
 
     if (providerProvisioningData.plan?.conditionalData[0].defaultValue === undefined) {
@@ -510,18 +508,16 @@ const ProviderClusterProvisionPage = () => {
         providerProvisioningData.plan?.conditionalData[0].options,
         (item) => item.value === providerProvisioningData.plan?.conditionalData[0].defaultValue
       )
+      console.log('defatulPlan')
       console.log(defatulPlan)
       setPlan(defatulPlan)
       setPlanOptions(providerProvisioningData.plan.conditionalData[0].options)
       setIsPlanFieldValid(ValidatedOptions.default)
       selections.set('plan', defatulPlan.value)
     }
-    console.log(selections)
     // setting cloud provider options and initial value
-    console.log('cloudProvider cpDefault')
     const cpDefault = filterSelected(providerProvisioningData.cloudProvider.conditionalData, selections)
 
-    console.log(cpDefault)
     if (cpDefault.defaultValue === undefined) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
@@ -591,8 +587,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handlePlanChange = (value) => {
-    console.log('handlePlanChange')
-    console.log(value)
     if (_.isEmpty(value)) {
       setIsPlanFieldValid(ValidatedOptions.error)
     } else {
@@ -601,26 +595,17 @@ const ProviderClusterProvisionPage = () => {
     const selectedPlan = _.find(planOptions, (cpPlan) => cpPlan.displayValue === value)
     setPlan(selectedPlan)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('plan', plan)))
-    console.log(providerChosenOptionsMap)
   }
 
   const handleRegionChange = (value) => {
-    console.log('handleRegionChange')
-
     const selectedRegion = _.find(
       filteredFieldsMap.get('regions').options,
       (cpRegion) => cpRegion.displayValue === value
     )
-    console.log(selectedRegion)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('regions', selectedRegion)))
-
-    console.log(providerChosenOptionsMap)
   }
 
   const handleCPChange = (value) => {
-    console.log('handleCPChange')
-    console.log(value)
-    console.log(filteredFieldsMap)
     if (_.isEmpty(value)) {
       setIsCloudProviderFieldValid(ValidatedOptions.error)
     } else {
@@ -629,27 +614,20 @@ const ProviderClusterProvisionPage = () => {
     const selectedCP = _.find(filteredFieldsMap.get('cloudProvider').options, (cp) => cp.displayValue === value)
     setCloudProvider(selectedCP)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', selectedCP)))
-    console.log(providerChosenOptionsMap)
   }
 
   const handleSpendLimitChange = (value) => {
-    console.log('handleSpendLimitChange')
-    console.log(value)
     if (_.isEmpty(value)) {
       setIsSpendLimitFieldValid(ValidatedOptions.error)
     } else {
       setIsSpendLimitFieldValid(ValidatedOptions.default)
     }
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('spendLimit', value)))
-
-    console.log(providerChosenOptionsMap)
   }
 
   const handleNodesChange = (value) => {
-    console.log('handleNodesChange')
     const selectedNodes = _.find(filteredFieldsMap.get('nodes').options, (cpNodes) => cpNodes.displayValue === value)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('nodes', selectedNodes)))
-    console.log(providerChosenOptionsMap)
   }
 
   const handleComputeChange = (value) => {
@@ -658,7 +636,6 @@ const ProviderClusterProvisionPage = () => {
       (cpCompute) => cpCompute.displayValue === value
     )
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('machineType', selectedCompute)))
-    console.log(providerChosenOptionsMap)
   }
 
   const handleStorageChange = (value) => {
@@ -667,7 +644,6 @@ const ProviderClusterProvisionPage = () => {
       (cpStorage) => cpStorage.displayValue === value
     )
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('storageGib', selectedStorage)))
-    console.log(providerChosenOptionsMap)
   }
 
   const setDBProviderFields = () => {
@@ -999,8 +975,8 @@ const ProviderClusterProvisionPage = () => {
       if (item.conditionalData !== undefined) {
         const matchedDependencies = filterSelected(item.conditionalData, selections)
         if (matchedDependencies !== undefined) {
-          console.log('matchedDependencies')
-          console.log(matchedDependencies)
+          // console.log('matchedDependencies')
+          // console.log(matchedDependencies)
           if (key !== 'cloudProvider' && key !== 'plan') {
             if (matchedDependencies.options !== undefined) {
               setProviderChosenOptionsMap(
