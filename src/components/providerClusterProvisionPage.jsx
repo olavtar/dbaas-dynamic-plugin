@@ -323,9 +323,6 @@ const ProviderClusterProvisionPage = () => {
       }),
     }
 
-    console.log('requestOpts')
-    console.log(requestOpts)
-
     setShowResults(false)
     setLoadingMsg('Creating Database Instance...')
 
