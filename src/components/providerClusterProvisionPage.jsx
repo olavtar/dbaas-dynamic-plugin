@@ -20,8 +20,6 @@ import {
   HelperTextItem,
   HelperText,
   Popover,
-  FormFieldGroup,
-  FormFieldGroupHeader,
   FormSection,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
