@@ -20,8 +20,6 @@ import {
   HelperTextItem,
   HelperText,
   Popover,
-  FormFieldGroup,
-  FormFieldGroupHeader,
   FormSection,
 } from '@patternfly/react-core'
 import { InfoCircleIcon, CheckCircleIcon, ExternalLinkAltIcon, HelpIcon } from '@patternfly/react-icons'
@@ -806,6 +804,37 @@ const ProviderClusterProvisionPage = () => {
                   isRequired
                   helperTextInvalid="This is a required field"
                   validated={isSpendLimitFieldValid}
+                  labelIcon={
+                    <Popover
+                      headerContent={<div>{selectedProvisioningData.spendLimit.displayName}</div>}
+                      bodyContent={
+                        <div>
+                          This value is the maximum amount, in credits, that you can be charged for a month of usage.
+                          Once the spending limit is met, cluster performance could be reduced or become unavailable. A
+                          spending limit value of zero means the Serverless hosting plan is free, but limits resources
+                          to 250 million request units (RU), and 5 GB of storage. For more information, see
+                          CockroachDB’s Serverless pricing{' '}
+                          <a
+                            href="https://www.cockroachlabs.com/docs/cockroachcloud/learn-about-pricing#choosing-a-spend-limit"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            page.
+                          </a>
+                        </div>
+                      }
+                    >
+                      <button
+                        type="button"
+                        aria-label="more info"
+                        onClick={(e) => e.preventDefault()}
+                        aria-describedby="more-info"
+                        className="pf-c-form__group-label-help"
+                      >
+                        <HelpIcon noVerticalAlign />
+                      </button>
+                    </Popover>
+                  }
                 >
                   <TextInput
                     isRequired
