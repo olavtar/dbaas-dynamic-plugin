@@ -550,10 +550,8 @@ const ProviderClusterProvisionPage = () => {
       setSelectedDBProvider(provider)
       console.log('provider')
       console.log(provider)
-      if (provider.value === cockroachdbProviderType) {
-        setSelectedProvisioningData(provider.providerProvisioningData)
-        setDefaultProviderData(provider.providerProvisioningData)
-      }
+      setSelectedProvisioningData(provider.providerProvisioningData)
+      setDefaultProviderData(provider.providerProvisioningData)
       filterInventoriesByProvider(provider)
     }
   }
