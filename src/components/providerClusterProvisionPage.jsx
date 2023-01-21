@@ -117,8 +117,11 @@ const ProviderClusterProvisionPage = () => {
   const [isDatabaseTypeFieldValid, setIsDatabaseTypeFieldValid] = React.useState('')
   const [isAvailabilityZonesFieldValid, setIsAvailabilityZonesFieldValid] = React.useState('')
 
+  const [regions, setRegions] = React.useState([])
+
   const [filteredFieldsMap, setFilteredFieldsMap] = React.useState(new Map())
   const [providerChosenOptionsMap, setProviderChosenOptionsMap] = React.useState(new Map())
+  const [selections, setSelectionsMap] = React.useState(new Map())
 
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
@@ -128,7 +131,6 @@ const ProviderClusterProvisionPage = () => {
   const [selectedInventory, setSelectedInventory] = React.useState({})
   const [clusterName, setClusterName] = React.useState('')
 
-  const [engine, setEngine] = React.useState('')
   const [statusMsg, setStatusMsg] = React.useState('')
   const [inventoryHasIssue, setInventoryHasIssue] = React.useState(false)
   const [showResults, setShowResults] = React.useState(false)
@@ -139,7 +141,6 @@ const ProviderClusterProvisionPage = () => {
   const [isInventoryFieldValid, setIsInventoryFieldValid] = React.useState('')
   const [isInstanceNameFieldValid, setIsInstanceNameFieldValid] = React.useState('')
   const [isProjectNameFieldValid, setIsProjectNameFieldValid] = React.useState('')
-  const [isEngineFieldValid, setIsEngineFieldValid] = React.useState('')
   const [isFormValid, setIsFormValid] = React.useState(false)
   const [installNamespace, setInstallNamespace] = React.useState('')
   const currentNS = window.location.pathname.split('/')[3]
@@ -467,16 +468,6 @@ const ProviderClusterProvisionPage = () => {
     console.log(providerChosenOptionsMap)
   }
 
-  const handleEngineChange = (value) => {
-    if (_.isEmpty(value)) {
-      setIsEngineFieldValid(ValidatedOptions.error)
-    } else {
-      setIsEngineFieldValid(ValidatedOptions.default)
-    }
-    const engineType = _.find(engineTypeOptions, (eng) => eng.value === value)
-    setEngine(engineType)
-  }
-
   const handleInstanceNameChange = (value) => {
     if (_.isEmpty(value)) {
       setIsInstanceNameFieldValid(ValidatedOptions.error)
@@ -508,7 +499,10 @@ const ProviderClusterProvisionPage = () => {
     filterLoop: for (const item of unfilteredList) {
       if (item.dependencies !== undefined) {
         for (const dependsItem of item.dependencies) {
-          if (dependsItem.value.toLowerCase() !== selections.get(dependsItem.field).toLowerCase()) {
+          // console.log(dependsItem)
+          // console.log(dependsItem.value)
+          // console.log(selections.get(dependsItem.field))
+          if (dependsItem.value !== selections.get(dependsItem.field)) {
             continue filterLoop
           }
         }
@@ -521,7 +515,7 @@ const ProviderClusterProvisionPage = () => {
   const setDefaultProviderData = (providerProvisioningData) => {
     console.log('setDefaultProviderData')
     // setting plan options and initial value
-    const selections = new Map()
+    //const selections = new Map()
 
     if (providerProvisioningData.plan?.conditionalData[0].defaultValue === undefined) {
       setIsPlanFieldValid(ValidatedOptions.error)
@@ -620,16 +614,19 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handleRegionChange = (value) => {
+    console.log('handleRegionChange')
+    console.log(value)
     if (_.isEmpty(value) || value === '') {
       setIsRegionFieldValid(ValidatedOptions.error)
     } else {
       setIsRegionFieldValid(ValidatedOptions.default)
     }
-    const selectedRegion = _.find(
-      filteredFieldsMap.get('regions').options,
-      (cpRegion) => cpRegion.displayValue === value
-    )
+    const selectedRegion = _.find(filteredFieldsMap.get('regions').options, (cpRegion) => cpRegion.value === value)
+    setRegions(selectedRegion)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('regions', selectedRegion)))
+    setSelectionsMap(new Map(selections.set('regions', selectedRegion.value)))
+    console.log(providerChosenOptionsMap)
+    console.log(selections)
   }
 
   const handleDatabaseTypeChange = (value) => {
@@ -676,8 +673,6 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const handleComputeChange = (value) => {
-    console.log('handleComputeChange')
-    console.log(value)
     if (_.isEmpty(value)) {
       setIsComputeFieldValid(ValidatedOptions.error)
     } else {
@@ -688,7 +683,6 @@ const ProviderClusterProvisionPage = () => {
       (cpCompute) => cpCompute.value === value
     )
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('machineType', selectedCompute)))
-    console.log(providerChosenOptionsMap)
   }
 
   const handleStorageChange = (value) => {
@@ -784,8 +778,7 @@ const ProviderClusterProvisionPage = () => {
               <FormSelect
                 isRequired
                 value={
-                  providerChosenOptionsMap.get('regions') !== undefined &&
-                  providerChosenOptionsMap.get('regions').displayValue
+                  providerChosenOptionsMap.get('regions') !== undefined && providerChosenOptionsMap.get('regions').value
                 }
                 onChange={handleRegionChange}
                 aria-label="regions"
@@ -795,7 +788,11 @@ const ProviderClusterProvisionPage = () => {
                   filteredFieldsMap
                     .get('regions')
                     .options.map((option, index) => (
-                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                      <FormSelectOption
+                        key={index}
+                        value={option.value}
+                        label={option.displayValue !== undefined ? option.displayValue : option.value}
+                      />
                     ))}
               </FormSelect>
             </FormGroup>
@@ -890,8 +887,7 @@ const ProviderClusterProvisionPage = () => {
               <FormSelect
                 isRequired
                 value={
-                  providerChosenOptionsMap.get('regions') !== undefined &&
-                  providerChosenOptionsMap.get('regions').displayValue
+                  providerChosenOptionsMap.get('regions') !== undefined && providerChosenOptionsMap.get('regions').value
                 }
                 onChange={handleRegionChange}
                 aria-label="regions"
@@ -901,7 +897,11 @@ const ProviderClusterProvisionPage = () => {
                   filteredFieldsMap
                     .get('regions')
                     .options.map((option, index) => (
-                      <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                      <FormSelectOption
+                        key={index}
+                        value={option.value}
+                        label={option.displayValue !== undefined ? option.displayValue : option.value}
+                      />
                     ))}
               </FormSelect>
               <HelperText>
@@ -957,8 +957,7 @@ const ProviderClusterProvisionPage = () => {
                 <FormSelect
                   isRequired
                   value={
-                    providerChosenOptionsMap.get('nodes') !== undefined &&
-                    providerChosenOptionsMap.get('nodes').displayValue
+                    providerChosenOptionsMap.get('nodes') !== undefined && providerChosenOptionsMap.get('nodes').value
                   }
                   onChange={handleNodesChange}
                   aria-label="nodes"
@@ -968,7 +967,11 @@ const ProviderClusterProvisionPage = () => {
                     filteredFieldsMap
                       .get('nodes')
                       .options.map((option, index) => (
-                        <FormSelectOption key={index} value={option.displayValue} label={option.displayValue} />
+                        <FormSelectOption
+                          key={index}
+                          value={option.value}
+                          label={option.displayValue !== undefined ? option.displayValue : option.value}
+                        />
                       ))}
                 </FormSelect>
               </FormGroup>
@@ -1089,19 +1092,60 @@ const ProviderClusterProvisionPage = () => {
     )
   }
 
+  const setDependentFields = () => {
+    console.log('setDependentFields')
+    console.log('providerChosenOptionsMap')
+    console.log(providerChosenOptionsMap)
+
+    console.log('selections')
+    console.log(selections)
+
+    const sortedFields = ['availabilityZones']
+
+    for (const key of sortedFields) {
+      //console.log(key)
+      const item = selectedProvisioningData[key]
+      // console.log(item)
+      if (item?.conditionalData !== undefined) {
+        const matchedDependencies = filterSelected(item.conditionalData, selections)
+        if (matchedDependencies !== undefined) {
+          console.log('matchedDependencies')
+          console.log(matchedDependencies)
+          if (matchedDependencies.options !== undefined) {
+            setProviderChosenOptionsMap(
+              new Map(
+                providerChosenOptionsMap.set(
+                  key,
+                  _.find(matchedDependencies.options, (option) => option.value === matchedDependencies.defaultValue)
+                )
+              )
+            )
+          } else {
+            setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultValue)))
+          }
+          // map with filtered data of drop downs available options.
+          setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
+        }
+      }
+    }
+    console.log('providerChosenOptionsMap')
+    console.log(providerChosenOptionsMap)
+    console.log('filteredFieldsMap')
+    console.log(filteredFieldsMap)
+  }
+
   const setProviderData = () => {
-    const selections = new Map()
+    //const selections = new Map()
     console.log('setProviderData')
-    selections.set('cloudProvider', cloudProvider.value)
-    selections.set('plan', plan.value)
+    selections.clear()
+    setSelectionsMap(new Map(selections.set('cloudProvider', cloudProvider.value)))
+    setSelectionsMap(new Map(selections.set('plan', plan.value)))
     filteredFieldsMap.clear()
     providerChosenOptionsMap.clear()
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('plan', plan)))
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProvider)))
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('name', '')))
 
-    console.log('selectedProvisioningData')
-    console.log(selectedProvisioningData)
     console.log('selectionsMap')
     console.log(selections)
 
@@ -1117,8 +1161,6 @@ const ProviderClusterProvisionPage = () => {
     ]
 
     for (const key of sortedFields) {
-      //  Object.keys(selectedProvisioningData).map((key) => {
-      // console.log(selectedProvisioningData[key])
       //   console.log(key)
       const item = selectedProvisioningData[key]
       //  console.log(item)
@@ -1127,7 +1169,6 @@ const ProviderClusterProvisionPage = () => {
         if (matchedDependencies !== undefined) {
           // console.log('matchedDependencies')
           // console.log(matchedDependencies)
-          //    if (key !== 'cloudProvider' && key !== 'plan') {
           if (matchedDependencies.options !== undefined) {
             setProviderChosenOptionsMap(
               new Map(
@@ -1140,15 +1181,12 @@ const ProviderClusterProvisionPage = () => {
           } else {
             setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultValue)))
           }
-          selections.set(key, matchedDependencies.defaultValue)
-          //  }
+          setSelectionsMap(new Map(selections.set(key, matchedDependencies.defaultValue)))
           // map with filtered data of drop downs available options.
           setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
         }
       }
     }
-    // )
-
     console.log('providerChosenOptionsMap')
     console.log(providerChosenOptionsMap)
     console.log('filteredFieldsMap')
@@ -1181,7 +1219,6 @@ const ProviderClusterProvisionPage = () => {
     isInventoryFieldValid,
     isProjectNameFieldValid,
     selectedDBProvider,
-    isEngineFieldValid,
     isPlanFieldValid,
     isCloudProviderFieldValid,
     isRegionFieldValid,
@@ -1203,6 +1240,12 @@ const ProviderClusterProvisionPage = () => {
       setProviderData()
     }
   }, [plan, cloudProvider, selectedDBProvider])
+
+  React.useEffect(() => {
+    if (!_.isEmpty(selectedDBProvider)) {
+      setDependentFields()
+    }
+  }, [regions])
 
   return (
     <FlexForm className="instance-table-container" onSubmit={provisionDBCluster}>
