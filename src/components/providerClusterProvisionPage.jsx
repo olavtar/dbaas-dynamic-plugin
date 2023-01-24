@@ -863,38 +863,40 @@ const ProviderClusterProvisionPage = () => {
                 </HelperTextItem>
               </HelperText>
             ) : null}
-            <FormGroup
-              label={selectedProvisioningData.regions.displayName}
-              fieldId="regions"
-              isRequired
-              helperTextInvalid="This is a required field"
-              validated={isRegionFieldValid}
-              className="half-width-selection"
-            >
-              <FormSelect
+            {selectedProvisioningData.regions !== undefined ? (
+              <FormGroup
+                label={selectedProvisioningData.regions.displayName}
+                fieldId="regions"
                 isRequired
-                value={
-                  providerChosenOptionsMap.get('regions') !== undefined && providerChosenOptionsMap.get('regions').value
-                }
-                onChange={handleRegionChange}
-                aria-label="regions"
+                helperTextInvalid="This is a required field"
                 validated={isRegionFieldValid}
+                className="half-width-selection"
               >
-                {filteredFieldsMap.get('regions') !== undefined &&
-                  filteredFieldsMap
-                    .get('regions')
-                    .options.map((option, index) => (
-                      <FormSelectOption
-                        key={index}
-                        value={option.value}
-                        label={option.displayValue !== undefined ? option.displayValue : option.value}
-                      />
-                    ))}
-              </FormSelect>
-              <HelperText>
-                <HelperTextItem variant="indeterminate">{selectedProvisioningData.regions.helpText}</HelperTextItem>
-              </HelperText>
-            </FormGroup>
+                <FormSelect
+                  isRequired
+                  value={
+                    providerChosenOptionsMap.get('regions') !== undefined && providerChosenOptionsMap.get('regions').value
+                  }
+                  onChange={handleRegionChange}
+                  aria-label="regions"
+                  validated={isRegionFieldValid}
+                >
+                  {filteredFieldsMap.get('regions') !== undefined &&
+                    filteredFieldsMap
+                      .get('regions')
+                      .options.map((option, index) => (
+                        <FormSelectOption
+                          key={index}
+                          value={option.value}
+                          label={option.displayValue !== undefined ? option.displayValue : option.value}
+                        />
+                      ))}
+                </FormSelect>
+                <HelperText>
+                  <HelperTextItem variant="indeterminate">{selectedProvisioningData.regions.helpText}</HelperTextItem>
+                </HelperText>
+              </FormGroup>
+            ) : null}
             {selectedProvisioningData.availabilityZones !== undefined ? (
               <FormGroup
                 label={selectedProvisioningData.availabilityZones.displayName}
@@ -1086,7 +1088,6 @@ const ProviderClusterProvisionPage = () => {
 
     const sortedFields = ['availabilityZones']
     setDefaultsForDependentFields(sortedFields)
-
   }
 
   const setDefaultsForDependentFields = (sortedFields) => {
@@ -1193,11 +1194,11 @@ const ProviderClusterProvisionPage = () => {
     }
   }, [plan, cloudProvider, selectedDBProvider])
 
-  React.useEffect(() => {
-    if (!_.isEmpty(selectedDBProvider)) {
-      setDependentFields()
-    }
-  }, [regions])
+  // React.useEffect(() => {
+  //   if (!_.isEmpty(selectedDBProvider)) {
+  //     setDependentFields()
+  //   }
+  // }, [regions])
 
   return (
     <FlexForm className="instance-table-container" onSubmit={provisionDBCluster}>
