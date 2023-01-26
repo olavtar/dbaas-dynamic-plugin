@@ -44,62 +44,54 @@ import {
   fetchDbaasCSV,
 } from '../utils'
 
-const LoadingView = ({ loadingMsg }) => {
-  return (
-    <React.Fragment>
-      <EmptyState>
-        <EmptyStateIcon variant="container" component={Spinner} />
-        <Title size="lg" headingLevel="h3">
-          {loadingMsg}
-        </Title>
-      </EmptyState>
-    </React.Fragment>
-  )
-}
+const LoadingView = ({ loadingMsg }) => (
+  <>
+    <EmptyState>
+      <EmptyStateIcon variant="container" component={Spinner} />
+      <Title size="lg" headingLevel="h3">
+        {loadingMsg}
+      </Title>
+    </EmptyState>
+  </>
+)
 
-const FailedView = ({ handleTryAgain, handleCancel, statusMsg }) => {
-  return (
-    <React.Fragment>
-      <EmptyState>
-        <EmptyStateIcon variant="container" component={InfoCircleIcon} className="error-icon" />
-        <Title headingLevel="h2" size="md">
-          Database instance creation failed
-        </Title>
-        <EmptyStateBody>The instance was not created. Try again.</EmptyStateBody>
-        <Alert variant="danger" isInline title="An error occured" className="co-alert co-break-word extra-top-margin">
-          <div>{statusMsg}</div>
-        </Alert>
-        <Button variant="primary" onClick={handleTryAgain}>
-          Try Again
+const FailedView = ({ handleTryAgain, handleCancel, statusMsg }) => (
+  <>
+    <EmptyState>
+      <EmptyStateIcon variant="container" component={InfoCircleIcon} className="error-icon" />
+      <Title headingLevel="h2" size="md">
+        Database instance creation failed
+      </Title>
+      <EmptyStateBody>The instance was not created. Try again.</EmptyStateBody>
+      <Alert variant="danger" isInline title="An error occured" className="co-alert co-break-word extra-top-margin">
+        <div>{statusMsg}</div>
+      </Alert>
+      <Button variant="primary" onClick={handleTryAgain}>
+        Try Again
+      </Button>
+      <EmptyStateSecondaryActions>
+        <Button variant="link" onClick={handleCancel}>
+          Close
         </Button>
-        <EmptyStateSecondaryActions>
-          <Button variant="link" onClick={handleCancel}>
-            Close
-          </Button>
-        </EmptyStateSecondaryActions>
-      </EmptyState>
-    </React.Fragment>
-  )
-}
+      </EmptyStateSecondaryActions>
+    </EmptyState>
+  </>
+)
 
-const SuccessView = ({ goToInstancesPage }) => {
-  return (
-    <React.Fragment>
-      <EmptyState>
-        <EmptyStateIcon variant="container" component={CheckCircleIcon} className="success-icon" />
-        <Title headingLevel="h2" size="md">
-          Database instance creation started
-        </Title>
-        <EmptyStateBody>
-          The database instance is being created, please click the button below to view it.
-        </EmptyStateBody>
-        <Button variant="primary" onClick={goToInstancesPage}>
-          View Database Instances
-        </Button>
-      </EmptyState>
-    </React.Fragment>
-  )
-}
+const SuccessView = ({ goToInstancesPage }) => (
+  <>
+    <EmptyState>
+      <EmptyStateIcon variant="container" component={CheckCircleIcon} className="success-icon" />
+      <Title headingLevel="h2" size="md">
+        Database instance creation started
+      </Title>
+      <EmptyStateBody>The database instance is being created, please click the button below to view it.</EmptyStateBody>
+      <Button variant="primary" onClick={goToInstancesPage}>
+        View Database Instances
+      </Button>
+    </EmptyState>
+  </>
+)
 
 const ProviderClusterProvisionPage = () => {
   const [plan, setPlan] = React.useState([])
@@ -112,15 +104,18 @@ const ProviderClusterProvisionPage = () => {
   const [isSpendLimitFieldValid, setIsSpendLimitFieldValid] = React.useState('')
   const [isRegionFieldValid, setIsRegionFieldValid] = React.useState('')
   const [isNodesFieldValid, setIsNodesFieldValid] = React.useState('')
-  const [isComputeFieldValid, setIsComputeFieldValid] = React.useState('')
+  const [isMachineTypeFieldValid, setIsMachineTypeFieldValid] = React.useState('')
   const [isStorageFieldValid, setIsStorageFieldValid] = React.useState('')
   const [isDatabaseTypeFieldValid, setIsDatabaseTypeFieldValid] = React.useState('')
-  const [isAvailabilityZonesFieldValid, setIsAvailabilityZonesFieldValid] = React.useState('')
+  const [isTeamProjectFieldValid, setIsTeamProjectFieldValid] = React.useState('')
+
+  // const [isAvailabilityZonesFieldValid, setIsAvailabilityZonesFieldValid] = React.useState('')
 
   const [regions, setRegions] = React.useState([])
 
   const [filteredFieldsMap, setFilteredFieldsMap] = React.useState(new Map())
   const [providerChosenOptionsMap, setProviderChosenOptionsMap] = React.useState(new Map())
+  // const [validationFieldMap, setValidationFieldMap] = React.useState(new Map())
 
   const [loadingMsg, setLoadingMsg] = React.useState('Fetching Database Providers and Provider Accounts...')
   const [providerList, setProviderList] = React.useState([{ value: '', label: 'Select database provider' }])
@@ -139,7 +134,6 @@ const ProviderClusterProvisionPage = () => {
   const [isDBProviderFieldValid, setIsDBProviderFieldValid] = React.useState('')
   const [isInventoryFieldValid, setIsInventoryFieldValid] = React.useState('')
   const [isInstanceNameFieldValid, setIsInstanceNameFieldValid] = React.useState('')
-  const [isProjectNameFieldValid, setIsProjectNameFieldValid] = React.useState('')
   const [isFormValid, setIsFormValid] = React.useState(false)
   const [installNamespace, setInstallNamespace] = React.useState('')
   const currentNS = window.location.pathname.split('/')[3]
@@ -147,6 +141,16 @@ const ProviderClusterProvisionPage = () => {
   const devSelectedProviderAccountName = window.location.pathname.split('/pa/')[1]
   const checkDBClusterStatusIntervalID = React.useRef()
   const checkDBClusterStatusTimeoutID = React.useRef()
+  const validationFields = [
+    ['regions', 'RegionFieldValid'],
+    ['nodes', 'NodesFieldValid'],
+    ['spendLimit', 'SpendLimitFieldValid'],
+    ['databaseType', 'DatabaseTypeFieldValid'],
+    ['machineType', 'MachineTypeFieldValid'],
+    ['storageGib', 'StorageFieldValid'],
+    ['teamProject', 'TeamProjectFieldValid'],
+  ]
+  const validationFieldMap = new Map(validationFields)
 
   const checkInventoryStatus = (inventory) => {
     if (inventory?.status?.conditions[0]?.type === 'SpecSynced') {
@@ -165,17 +169,16 @@ const ProviderClusterProvisionPage = () => {
 
   const detectSelectedDBProviderAndProviderAccount = () => {
     if (!_.isEmpty(devSelectedDBProviderName) && !_.isEmpty(providerList)) {
-      let provider = _.find(providerList, (dbProvider) => {
-        return dbProvider.value === devSelectedDBProviderName
-      })
+      const provider = _.find(providerList, (dbProvider) => dbProvider.value === devSelectedDBProviderName)
       setSelectedDBProvider(provider)
       filterInventoriesByProvider(provider)
       setIsDBProviderFieldValid(ValidatedOptions.default)
       setSelectedProvisioningData(provider.providerProvisioningData)
+      setIsFormValid(false)
     }
 
     if (!_.isEmpty(devSelectedProviderAccountName) && !_.isEmpty(inventories)) {
-      let inventory = inventories.forEach((inv) => {
+      const inventory = inventories.forEach((inv) => {
         if (inv.name === devSelectedProviderAccountName) {
           checkInventoryStatus(inv)
           setSelectedInventory(inv)
@@ -203,7 +206,7 @@ const ProviderClusterProvisionPage = () => {
 
   const checkDBClusterStatus = (clusterName) => {
     if (!_.isEmpty(clusterName)) {
-      let requestOpts = {
+      const requestOpts = {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -212,19 +215,14 @@ const ProviderClusterProvisionPage = () => {
       }
 
       fetch(
-        '/api/kubernetes/apis/dbaas.redhat.com/' +
-          DBAAS_API_VERSION +
-          '/namespaces/' +
-          currentNS +
-          '/dbaasinstances/' +
-          clusterName,
+        `/api/kubernetes/apis/dbaas.redhat.com/${DBAAS_API_VERSION}/namespaces/${currentNS}/dbaasinstances/${clusterName}`,
         requestOpts
       )
         .then((response) => response.json())
         .then((responseJson) => {
-          let provisionReadyCondition = responseJson?.status?.conditions?.find((condition) => {
-            return condition.type?.toLowerCase() === 'provisionready'
-          })
+          const provisionReadyCondition = responseJson?.status?.conditions?.find(
+            (condition) => condition.type?.toLowerCase() === 'provisionready'
+          )
 
           if (responseJson?.status?.phase?.toLowerCase() === 'creating') {
             setClusterProvisionSuccess(true)
@@ -269,31 +267,39 @@ const ProviderClusterProvisionPage = () => {
 
     let provisioningParameters = {}
 
-    if (plan.value === 'FREETRIAL') {
-      if (providerChosenOptionsMap.has('teamProject')) {
-        provisioningParameters = {
-          teamProject: providerChosenOptionsMap.get('teamProject').value,
+    if (providerChosenOptionsMap.size > 0) {
+      for (const [mapKey, mapValue] of providerChosenOptionsMap) {
+        if (mapValue.value === undefined) {
+          provisioningParameters[mapKey] = mapValue
+        } else {
+          provisioningParameters[mapKey] = mapValue.value
         }
       }
-    } else if (plan.value === 'SERVERLESS') {
-      provisioningParameters = {
-        name: clusterName,
-        cloudProvider: providerChosenOptionsMap.get('cloudProvider').value,
-        plan: providerChosenOptionsMap.get('plan').value,
-        regions: providerChosenOptionsMap.get('regions').value,
-        spendLimit: providerChosenOptionsMap.get('spendLimit'),
-      }
-    } else if (plan.value === 'DEDICATED') {
-      provisioningParameters = {
-        name: clusterName,
-        cloudProvider: providerChosenOptionsMap.get('cloudProvider').value,
-        plan: providerChosenOptionsMap.get('plan').value,
-        regions: providerChosenOptionsMap.get('regions').value,
-        nodes: providerChosenOptionsMap.get('nodes').value,
-        machineType: providerChosenOptionsMap.get('machineType').value,
-        storageGib: providerChosenOptionsMap.get('storageGib').value,
-      }
     }
+
+    // if (plan.value === 'FREETRIAL') {
+    //   if (providerChosenOptionsMap.has('teamProject')) {
+    //     provisioningParameters = {
+    //       teamProject: providerChosenOptionsMap.get('teamProject').value,
+    //     }
+    //   }
+    // } else if (plan.value === 'SERVERLESS') {
+    //   for (const [mapKey, mapValue] of providerChosenOptionsMap) {
+    //     if (mapValue.value === undefined) {
+    //       provisioningParameters[mapKey] = mapValue
+    //     } else {
+    //       provisioningParameters[mapKey] = mapValue.value
+    //     }
+    //   }
+    // } else if (plan.value === 'DEDICATED') {
+    //   for (const [mapKey, mapValue] of providerChosenOptionsMap) {
+    //     if (mapValue.value === undefined) {
+    //       provisioningParameters[mapKey] = mapValue
+    //     } else {
+    //       provisioningParameters[mapKey] = mapValue.value
+    //     }
+    //   }
+    // }
 
     console.log('provisioningParameters')
     console.log(provisioningParameters)
@@ -306,7 +312,7 @@ const ProviderClusterProvisionPage = () => {
         'X-CSRFToken': getCSRFToken(),
       },
       body: JSON.stringify({
-        apiVersion: 'dbaas.redhat.com/' + DBAAS_API_VERSION,
+        apiVersion: `dbaas.redhat.com/${DBAAS_API_VERSION}`,
         kind: 'DBaaSInstance',
         metadata: {
           name: clusterName,
@@ -327,7 +333,7 @@ const ProviderClusterProvisionPage = () => {
     setLoadingMsg('Creating Database Instance...')
 
     fetch(
-      '/api/kubernetes/apis/dbaas.redhat.com/' + DBAAS_API_VERSION + '/namespaces/' + currentNS + '/dbaasinstances',
+      `/api/kubernetes/apis/dbaas.redhat.com/${DBAAS_API_VERSION}/namespaces/${currentNS}/dbaasinstances`,
       requestOpts
     )
       .then((response) => response.json())
@@ -360,9 +366,7 @@ const ProviderClusterProvisionPage = () => {
 
   const filterInventoriesByProvider = (provider) => {
     if (!_.isEmpty(provider)) {
-      let filteredInventoryList = _.filter(inventories, (inventory) => {
-        return inventory.providerRef?.name === provider.value
-      })
+      const filteredInventoryList = _.filter(inventories, (inventory) => inventory.providerRef?.name === provider.value)
       setFilteredInventories(filteredInventoryList)
 
       // Set the first inventory as the selected inventory by default
@@ -381,10 +385,10 @@ const ProviderClusterProvisionPage = () => {
 
   const parseInventories = (inventoryItems) => {
     if (inventoryItems.length > 0) {
-      let inventories = []
+      const inventories = []
 
       inventoryItems.forEach((inventory, index) => {
-        let obj = { id: 0, name: '', namespace: '', instances: [], status: {}, providerRef: {} }
+        const obj = { id: 0, name: '', namespace: '', instances: [], status: {}, providerRef: {} }
         obj.id = index
         obj.name = inventory.metadata?.name
         obj.namespace = inventory.metadata?.namespace
@@ -395,9 +399,7 @@ const ProviderClusterProvisionPage = () => {
           inventory.status?.conditions[0]?.status !== 'False' &&
           inventory.status?.conditions[0]?.type === 'SpecSynced'
         ) {
-          inventory.status?.instances?.map((instance) => {
-            return (instance.provider = inventory.spec?.providerRef?.name)
-          })
+          inventory.status?.instances?.map((instance) => (instance.provider = inventory.spec?.providerRef?.name))
           obj.instances = inventory.status?.instances
         }
 
@@ -414,13 +416,14 @@ const ProviderClusterProvisionPage = () => {
   }
 
   async function filteredInventoriesByValidConnectionNS(installNS = '') {
-    let inventoryData = await fetchInventoriesAndMapByNSAndRules(installNS).catch(function (error) {
+    const inventoryData = await fetchInventoriesAndMapByNSAndRules(installNS).catch((error) => {
       console.log(error)
     })
     return await filterInventoriesByConnNSandProvision(inventoryData, currentNS)
   }
 
   const validateForm = () => {
+    console.log('validateForm')
     let isValid =
       isDBProviderFieldValid === ValidatedOptions.default &&
       isInventoryFieldValid === ValidatedOptions.default &&
@@ -428,34 +431,41 @@ const ProviderClusterProvisionPage = () => {
       isPlanFieldValid === ValidatedOptions.default &&
       isCloudProviderFieldValid === ValidatedOptions.default
 
-    if (selectedDBProvider.value === mongoProviderType) {
-      isValid = isValid && isProjectNameFieldValid === ValidatedOptions.default
+    if (providerChosenOptionsMap.has('teamProject')) {
+      isValid = isValid && isTeamProjectFieldValid === ValidatedOptions.default
     }
-    if (selectedDBProvider.value === rdsProviderType) {
-      isValid = isValid && isEngineFieldValid === ValidatedOptions.default
+    if (providerChosenOptionsMap.has('spendLimit')) {
+      console.log('isSpendLimitFieldValid')
+      console.log(isSpendLimitFieldValid)
+      isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
     }
-    //  if (selectedDBProvider.value === cockroachdbProviderType) {
-    // isValid = isValid && isPlanFieldValid === ValidatedOptions.default
-    //     isCloudProviderFieldValid === ValidatedOptions.default &&
-    //     isRegionFieldValid === ValidatedOptions.default
-    //   if (plan.value === 'SERVERLESS') {
-    //     isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
-    //   } else if (plan.value === 'DEDICATED') {
-    //     isValid =
-    //       isValid &&
-    //       isComputeFieldValid === ValidatedOptions.default &&
-    //       isNodesFieldValid === ValidatedOptions.default &&
-    //       isStorageFieldValid === ValidatedOptions.default
-    //   }
-    //  }
+    if (providerChosenOptionsMap.has('regions')) {
+      console.log('isRegionFieldValid')
+      console.log(isRegionFieldValid)
+      isValid = isValid && isRegionFieldValid === ValidatedOptions.default
+    }
+    if (providerChosenOptionsMap.has('databaseType')) {
+      isValid = isValid && isDatabaseTypeFieldValid === ValidatedOptions.default
+    }
+    if (providerChosenOptionsMap.has('nodes')) {
+      isValid = isValid && isNodesFieldValid === ValidatedOptions.default
+    }
+    if (providerChosenOptionsMap.has('machineType')) {
+      isValid = isValid && isMachineTypeFieldValid === ValidatedOptions.default
+    }
+    if (providerChosenOptionsMap.has('storageGib')) {
+      isValid = isValid && isStorageFieldValid === ValidatedOptions.default
+    }
+
+    console.log(isValid)
     setIsFormValid(isValid)
   }
 
   const handleProjectNameChange = (value) => {
     if (_.isEmpty(value)) {
-      setIsProjectNameFieldValid(ValidatedOptions.error)
+      setIsTeamProjectFieldValid(ValidatedOptions.error)
     } else {
-      setIsProjectNameFieldValid(ValidatedOptions.default)
+      setIsTeamProjectFieldValid(ValidatedOptions.default)
     }
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('teamProject', value)))
     console.log(providerChosenOptionsMap)
@@ -497,7 +507,6 @@ const ProviderClusterProvisionPage = () => {
           }
         }
       }
-      console.log(item)
       matchedItem = item
     }
     return matchedItem
@@ -505,8 +514,8 @@ const ProviderClusterProvisionPage = () => {
 
   const setDefaultProviderData = (providerProvisioningData) => {
     console.log('setDefaultProviderData')
+    providerChosenOptionsMap.clear()
     // setting plan options and initial value
-
     if (providerProvisioningData.plan?.conditionalData[0].defaultValue === undefined) {
       setIsPlanFieldValid(ValidatedOptions.error)
     } else {
@@ -546,11 +555,10 @@ const ProviderClusterProvisionPage = () => {
       setIsDBProviderFieldValid(ValidatedOptions.default)
     }
     if (!_.isEmpty(providerList)) {
-      let provider = _.find(providerList, (dbProvider) => {
-        return dbProvider.value === value
-      })
+      const provider = _.find(providerList, (dbProvider) => dbProvider.value === value)
       setInventoryHasIssue(false)
       setSelectedDBProvider(provider)
+      setIsFormValid(false)
       console.log('provider')
       console.log(provider)
       setSelectedProvisioningData(provider.providerProvisioningData)
@@ -560,7 +568,7 @@ const ProviderClusterProvisionPage = () => {
   }
 
   const fetchProviderInfo = () => {
-    let requestOpts = {
+    const requestOpts = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -568,7 +576,7 @@ const ProviderClusterProvisionPage = () => {
       },
     }
 
-    fetch('/api/kubernetes/apis/dbaas.redhat.com/' + DBAAS_API_VERSION + '/dbaasproviders', requestOpts)
+    fetch(`/api/kubernetes/apis/dbaas.redhat.com/${DBAAS_API_VERSION}/dbaasproviders`, requestOpts)
       .then((response) => response.json())
       .then((data) => {
         const dbProviderList = []
@@ -617,7 +625,7 @@ const ProviderClusterProvisionPage = () => {
       setIsRegionFieldValid(ValidatedOptions.default)
     }
     const selectedRegion = _.find(filteredFieldsMap.get('regions').options, (cpRegion) => cpRegion.value === value)
-    setRegions(selectedRegion)
+    // setRegions(selectedRegion)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('regions', selectedRegion)))
     console.log(providerChosenOptionsMap)
   }
@@ -667,9 +675,9 @@ const ProviderClusterProvisionPage = () => {
 
   const handleComputeChange = (value) => {
     if (_.isEmpty(value)) {
-      setIsComputeFieldValid(ValidatedOptions.error)
+      setIsMachineTypeFieldValid(ValidatedOptions.error)
     } else {
-      setIsComputeFieldValid(ValidatedOptions.default)
+      setIsMachineTypeFieldValid(ValidatedOptions.default)
     }
     const selectedCompute = _.find(
       filteredFieldsMap.get('machineType').options,
@@ -682,7 +690,7 @@ const ProviderClusterProvisionPage = () => {
     if (_.isEmpty(value)) {
       setIsStorageFieldValid(ValidatedOptions.error)
     } else {
-      setIsComputeFieldValid(ValidatedOptions.default)
+      setIsStorageFieldValid(ValidatedOptions.default)
     }
     let selectedStorage = value
     if (selectedProvisioningData.storageGib.conditionalData[0].options !== undefined) {
@@ -715,20 +723,16 @@ const ProviderClusterProvisionPage = () => {
               isRequired
               className="half-width-selection"
               helperTextInvalid="This is a required field"
-              validated={isProjectNameFieldValid}
+              validated={isTeamProjectFieldValid}
             >
               <TextInput
                 isRequired
                 type="text"
                 id="teamProject"
                 name="teamProject"
-                value={
-                  providerChosenOptionsMap.get('teamProject') === undefined
-                    ? ''
-                    : providerChosenOptionsMap.get('teamProject')
-                }
+                value={providerChosenOptionsMap.get('teamProject')}
                 onChange={handleProjectNameChange}
-                validated={isProjectNameFieldValid}
+                validated={isTeamProjectFieldValid}
               />
               <HelperText>
                 <HelperTextItem variant="indeterminate">
@@ -875,7 +879,8 @@ const ProviderClusterProvisionPage = () => {
                 <FormSelect
                   isRequired
                   value={
-                    providerChosenOptionsMap.get('regions') !== undefined && providerChosenOptionsMap.get('regions').value
+                    providerChosenOptionsMap.get('regions') !== undefined &&
+                    providerChosenOptionsMap.get('regions').value
                   }
                   onChange={handleRegionChange}
                   aria-label="regions"
@@ -897,43 +902,43 @@ const ProviderClusterProvisionPage = () => {
                 </HelperText>
               </FormGroup>
             ) : null}
-            {selectedProvisioningData.availabilityZones !== undefined ? (
-              <FormGroup
-                label={selectedProvisioningData.availabilityZones.displayName}
-                fieldId="availabilityZones"
-                isRequired
-                helperTextInvalid="This is a required field"
-                validated={isAvailabilityZonesFieldValid}
-                className="half-width-selection"
-              >
-                <FormSelect
-                  isRequired
-                  value={
-                    providerChosenOptionsMap.get('availabilityZones') !== undefined &&
-                    providerChosenOptionsMap.get('availabilityZones').value
-                  }
-                  onChange={handleAvailabilityZonesChange}
-                  aria-label="availabilityZones"
-                  validated={isAvailabilityZonesFieldValid}
-                >
-                  {filteredFieldsMap.get('availabilityZones') !== undefined &&
-                    filteredFieldsMap
-                      .get('availabilityZones')
-                      .options.map((option, index) => (
-                        <FormSelectOption
-                          key={index}
-                          value={option.value}
-                          label={option.displayValue !== undefined ? option.displayValue : option.value}
-                        />
-                      ))}
-                </FormSelect>
-                <HelperText>
-                  <HelperTextItem variant="indeterminate">
-                    {selectedProvisioningData.availabilityZones.helpText}
-                  </HelperTextItem>
-                </HelperText>
-              </FormGroup>
-            ) : null}
+            {/* {selectedProvisioningData.availabilityZones !== undefined ? ( */}
+            {/*   <FormGroup */}
+            {/*     label={selectedProvisioningData.availabilityZones.displayName} */}
+            {/*     fieldId="availabilityZones" */}
+            {/*     isRequired */}
+            {/*     helperTextInvalid="This is a required field" */}
+            {/*     validated={isAvailabilityZonesFieldValid} */}
+            {/*     className="half-width-selection" */}
+            {/*   > */}
+            {/*     <FormSelect */}
+            {/*       isRequired */}
+            {/*       value={ */}
+            {/*         providerChosenOptionsMap.get('availabilityZones') !== undefined && */}
+            {/*         providerChosenOptionsMap.get('availabilityZones').value */}
+            {/*       } */}
+            {/*       onChange={handleAvailabilityZonesChange} */}
+            {/*       aria-label="availabilityZones" */}
+            {/*       validated={isAvailabilityZonesFieldValid} */}
+            {/*     > */}
+            {/*       {filteredFieldsMap.get('availabilityZones') !== undefined && */}
+            {/*         filteredFieldsMap */}
+            {/*           .get('availabilityZones') */}
+            {/*           .options.map((option, index) => ( */}
+            {/*             <FormSelectOption */}
+            {/*               key={index} */}
+            {/*               value={option.value} */}
+            {/*               label={option.displayValue !== undefined ? option.displayValue : option.value} */}
+            {/*             /> */}
+            {/*           ))} */}
+            {/*     </FormSelect> */}
+            {/*     <HelperText> */}
+            {/*       <HelperTextItem variant="indeterminate"> */}
+            {/*         {selectedProvisioningData.availabilityZones.helpText} */}
+            {/*       </HelperTextItem> */}
+            {/*     </HelperText> */}
+            {/*   </FormGroup> */}
+            {/* ) : null} */}
             {selectedProvisioningData.nodes !== undefined ? (
               <FormGroup
                 label={selectedProvisioningData.nodes.displayName}
@@ -983,7 +988,7 @@ const ProviderClusterProvisionPage = () => {
                 fieldId="machineType"
                 isRequired
                 helperTextInvalid="This is a required field"
-                validated={isComputeFieldValid}
+                validated={isMachineTypeFieldValid}
                 className="half-width-selection"
               >
                 <FormSelect
@@ -994,7 +999,7 @@ const ProviderClusterProvisionPage = () => {
                   }
                   onChange={handleComputeChange}
                   aria-label="machineType"
-                  validated={isComputeFieldValid}
+                  validated={isMachineTypeFieldValid}
                 >
                   {filteredFieldsMap.get('machineType') !== undefined &&
                     filteredFieldsMap
@@ -1081,27 +1086,40 @@ const ProviderClusterProvisionPage = () => {
     )
   }
 
-  const setDependentFields = () => {
-    console.log('setDependentFields')
-    console.log('providerChosenOptionsMap')
-    console.log(providerChosenOptionsMap)
-
-    const sortedFields = ['availabilityZones']
-    setDefaultsForDependentFields(sortedFields)
-  }
+  // const setDependentFields = () => {
+  //   console.log('setDependentFields')
+  //   console.log('providerChosenOptionsMap')
+  //   console.log(providerChosenOptionsMap)
+  //
+  //   const sortedFields = ['availabilityZones']
+  //   setDefaultsForDependentFields(sortedFields)
+  // }
 
   const setDefaultsForDependentFields = (sortedFields) => {
-    console.log(setDefaultsForDependentFields)
+    console.log('setDefaultsForDependentFields')
     for (const key of sortedFields) {
-      //   console.log(key)
+      console.log(key)
       const item = selectedProvisioningData[key]
-      //  console.log(item)
+      console.log(item)
       if (item?.conditionalData !== undefined) {
         const matchedDependencies = filterSelected(item.conditionalData)
         if (matchedDependencies !== undefined) {
           // console.log('matchedDependencies')
           // console.log(matchedDependencies)
           if (matchedDependencies.options !== undefined) {
+            const foundOption = _.find(
+              matchedDependencies.options,
+              (option) => option.value === matchedDependencies.defaultValue
+            )
+            // set if Field is valid
+            if (foundOption.value) {
+              const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
+              console.log('evalString')
+              console.log(evalString)
+              eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`)
+            } else {
+              eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`)
+            }
             setProviderChosenOptionsMap(
               new Map(
                 providerChosenOptionsMap.set(
@@ -1111,17 +1129,56 @@ const ProviderClusterProvisionPage = () => {
               )
             )
           } else {
+            console.log('NO OPTIONS')
+            if (matchedDependencies.defaultValue) {
+              const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
+              console.log('evalString')
+              console.log(evalString)
+              eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`)
+            } else {
+              const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`
+              console.log('evalString')
+              console.log(evalString)
+              eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`)
+            }
             setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultValue)))
           }
           // map with filtered data of drop downs available options.
           setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
         }
+      } else {
+        console.log('UNDEFINED OR No CONDITIONAL DATA')
+        console.log(item)
+        if (item !== undefined) {
+          console.log('Item is not undefined')
+          setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, '')))
+        }
+        // if (item.defaultValue) {
+        //   const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
+        //   console.log('evalString')
+        //   console.log(evalString)
+        //   eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`)
+        // } else {
+        //   const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`
+        //   console.log('evalString')
+        //   console.log(evalString)
+        //   eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`)
+        // }
+        // setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, item.defaultValue)))
       }
     }
+
     console.log('providerChosenOptionsMap')
     console.log(providerChosenOptionsMap)
     console.log('filteredFieldsMap')
     console.log(filteredFieldsMap)
+    console.log('validationFieldMap')
+    console.log(validationFieldMap)
+
+    //   for (const [mapKey, mapValue] of providerChosenOptionsMap) {
+    //   providerChosenOptionsMap.forEach((chosenOption) => {
+    //     console.log(chosenOption)
+    //   })
   }
 
   const setProviderFields = () => {
@@ -1132,16 +1189,7 @@ const ProviderClusterProvisionPage = () => {
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('cloudProvider', cloudProvider)))
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('name', '')))
 
-    const sortedFields = [
-      'regions',
-      'spendLimit',
-      'nodes',
-      'databaseType',
-      'machineType',
-      'storageGib',
-      'databaseType',
-      'availabilityZones',
-    ]
+    const sortedFields = ['regions', 'spendLimit', 'nodes', 'databaseType', 'machineType', 'storageGib', 'teamProject']
 
     setDefaultsForDependentFields(sortedFields)
   }
@@ -1170,16 +1218,17 @@ const ProviderClusterProvisionPage = () => {
     isDBProviderFieldValid,
     isInstanceNameFieldValid,
     isInventoryFieldValid,
-    isProjectNameFieldValid,
+    isTeamProjectFieldValid,
     selectedDBProvider,
     isPlanFieldValid,
     isCloudProviderFieldValid,
     isRegionFieldValid,
     isSpendLimitFieldValid,
-    isComputeFieldValid,
+    isMachineTypeFieldValid,
     isStorageFieldValid,
     isNodesFieldValid,
-    isAvailabilityZonesFieldValid,
+    isFormValid,
+    // isAvailabilityZonesFieldValid,
   ])
 
   React.useEffect(() => {
