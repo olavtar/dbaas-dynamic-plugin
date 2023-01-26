@@ -133,7 +133,7 @@ const ProviderClusterProvisionPage = () => {
   const [provisionRequestFired, setProvisionRequestFired] = React.useState(false)
   const [isDBProviderFieldValid, setIsDBProviderFieldValid] = React.useState('')
   const [isInventoryFieldValid, setIsInventoryFieldValid] = React.useState('')
-  const [isInstanceNameFieldValid, setIsInstanceNameFieldValid] = React.useState('')
+  const [isNameFieldValid, setIsNameFieldValid] = React.useState('')
   const [isFormValid, setIsFormValid] = React.useState(false)
   const [installNamespace, setInstallNamespace] = React.useState('')
   const currentNS = window.location.pathname.split('/')[3]
@@ -142,6 +142,9 @@ const ProviderClusterProvisionPage = () => {
   const checkDBClusterStatusIntervalID = React.useRef()
   const checkDBClusterStatusTimeoutID = React.useRef()
   const validationFields = [
+    ['plan', 'PlanFieldValid'],
+    ['cloudProvider', 'CloudProviderFieldValid'],
+    ['name', 'NameFieldValid'],
     ['regions', 'RegionFieldValid'],
     ['nodes', 'NodesFieldValid'],
     ['spendLimit', 'SpendLimitFieldValid'],
@@ -425,39 +428,16 @@ const ProviderClusterProvisionPage = () => {
   const validateForm = () => {
     console.log('validateForm')
     let isValid =
-      isDBProviderFieldValid === ValidatedOptions.default &&
-      isInventoryFieldValid === ValidatedOptions.default &&
-      isInstanceNameFieldValid === ValidatedOptions.default &&
-      isPlanFieldValid === ValidatedOptions.default &&
-      isCloudProviderFieldValid === ValidatedOptions.default
+      isDBProviderFieldValid === ValidatedOptions.default && isInventoryFieldValid === ValidatedOptions.default
 
-    if (providerChosenOptionsMap.has('teamProject')) {
-      isValid = isValid && isTeamProjectFieldValid === ValidatedOptions.default
+    if (providerChosenOptionsMap.size > 0) {
+      for (const [key] of providerChosenOptionsMap) {
+        if (key === 'teamProject' && selectedDBProvider.value === crunchyProviderType) {
+          continue;
+        }
+        isValid = isValid && eval(`is${validationFieldMap.get(key)}`) === ValidatedOptions.default
+      }
     }
-    if (providerChosenOptionsMap.has('spendLimit')) {
-      console.log('isSpendLimitFieldValid')
-      console.log(isSpendLimitFieldValid)
-      isValid = isValid && isSpendLimitFieldValid === ValidatedOptions.default
-    }
-    if (providerChosenOptionsMap.has('regions')) {
-      console.log('isRegionFieldValid')
-      console.log(isRegionFieldValid)
-      isValid = isValid && isRegionFieldValid === ValidatedOptions.default
-    }
-    if (providerChosenOptionsMap.has('databaseType')) {
-      isValid = isValid && isDatabaseTypeFieldValid === ValidatedOptions.default
-    }
-    if (providerChosenOptionsMap.has('nodes')) {
-      isValid = isValid && isNodesFieldValid === ValidatedOptions.default
-    }
-    if (providerChosenOptionsMap.has('machineType')) {
-      isValid = isValid && isMachineTypeFieldValid === ValidatedOptions.default
-    }
-    if (providerChosenOptionsMap.has('storageGib')) {
-      isValid = isValid && isStorageFieldValid === ValidatedOptions.default
-    }
-
-    console.log(isValid)
     setIsFormValid(isValid)
   }
 
@@ -473,9 +453,9 @@ const ProviderClusterProvisionPage = () => {
 
   const handleInstanceNameChange = (value) => {
     if (_.isEmpty(value)) {
-      setIsInstanceNameFieldValid(ValidatedOptions.error)
+      setIsNameFieldValid(ValidatedOptions.error)
     } else {
-      setIsInstanceNameFieldValid(ValidatedOptions.default)
+      setIsNameFieldValid(ValidatedOptions.default)
     }
     setClusterName(value)
     setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set('name', value)))
@@ -720,13 +700,13 @@ const ProviderClusterProvisionPage = () => {
             <FormGroup
               label={selectedProvisioningData.teamProject.displayName}
               fieldId="teamProject"
-              isRequired
+              isRequired={selectedDBProvider.value === mongoProviderType}
               className="half-width-selection"
               helperTextInvalid="This is a required field"
               validated={isTeamProjectFieldValid}
             >
               <TextInput
-                isRequired
+                isRequired={selectedDBProvider.value === mongoProviderType}
                 type="text"
                 id="teamProject"
                 name="teamProject"
@@ -1098,9 +1078,9 @@ const ProviderClusterProvisionPage = () => {
   const setDefaultsForDependentFields = (sortedFields) => {
     console.log('setDefaultsForDependentFields')
     for (const key of sortedFields) {
-      console.log(key)
+      // console.log(key)
       const item = selectedProvisioningData[key]
-      console.log(item)
+      //console.log(item)
       if (item?.conditionalData !== undefined) {
         const matchedDependencies = filterSelected(item.conditionalData)
         if (matchedDependencies !== undefined) {
@@ -1113,9 +1093,9 @@ const ProviderClusterProvisionPage = () => {
             )
             // set if Field is valid
             if (foundOption.value) {
-              const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
-              console.log('evalString')
-              console.log(evalString)
+              // const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
+              // console.log('evalString')
+              // console.log(evalString)
               eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`)
             } else {
               eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`)
@@ -1131,14 +1111,14 @@ const ProviderClusterProvisionPage = () => {
           } else {
             console.log('NO OPTIONS')
             if (matchedDependencies.defaultValue) {
-              const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
-              console.log('evalString')
-              console.log(evalString)
+              // const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
+              // console.log('evalString')
+              // console.log(evalString)
               eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`)
             } else {
-              const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`
-              console.log('evalString')
-              console.log(evalString)
+              // const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`
+              // console.log('evalString')
+              // console.log(evalString)
               eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`)
             }
             setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, matchedDependencies.defaultValue)))
@@ -1147,24 +1127,12 @@ const ProviderClusterProvisionPage = () => {
           setFilteredFieldsMap(new Map(filteredFieldsMap.set(key, matchedDependencies)))
         }
       } else {
-        console.log('UNDEFINED OR No CONDITIONAL DATA')
-        console.log(item)
+        // console.log('UNDEFINED OR No CONDITIONAL DATA')
+        // console.log(item)
         if (item !== undefined) {
-          console.log('Item is not undefined')
+          // console.log('Item is not undefined')
           setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, '')))
         }
-        // if (item.defaultValue) {
-        //   const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`
-        //   console.log('evalString')
-        //   console.log(evalString)
-        //   eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.default}')`)
-        // } else {
-        //   const evalString = `setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`
-        //   console.log('evalString')
-        //   console.log(evalString)
-        //   eval(`setIs${validationFieldMap.get(key)}('${ValidatedOptions.error}')`)
-        // }
-        // setProviderChosenOptionsMap(new Map(providerChosenOptionsMap.set(key, item.defaultValue)))
       }
     }
 
@@ -1174,11 +1142,6 @@ const ProviderClusterProvisionPage = () => {
     console.log(filteredFieldsMap)
     console.log('validationFieldMap')
     console.log(validationFieldMap)
-
-    //   for (const [mapKey, mapValue] of providerChosenOptionsMap) {
-    //   providerChosenOptionsMap.forEach((chosenOption) => {
-    //     console.log(chosenOption)
-    //   })
   }
 
   const setProviderFields = () => {
@@ -1216,7 +1179,7 @@ const ProviderClusterProvisionPage = () => {
     validateForm()
   }, [
     isDBProviderFieldValid,
-    isInstanceNameFieldValid,
+    isNameFieldValid,
     isInventoryFieldValid,
     isTeamProjectFieldValid,
     selectedDBProvider,
@@ -1385,7 +1348,7 @@ const ProviderClusterProvisionPage = () => {
                       isRequired
                       className="half-width-selection"
                       helperTextInvalid="This is a required field"
-                      validated={isInstanceNameFieldValid}
+                      validated={isNameFieldValid}
                     >
                       <TextInput
                         isRequired
@@ -1394,7 +1357,7 @@ const ProviderClusterProvisionPage = () => {
                         name="name"
                         value={providerChosenOptionsMap.get('name')}
                         onChange={handleInstanceNameChange}
-                        validated={isInstanceNameFieldValid}
+                        validated={isNameFieldValid}
                       />
                       <HelperText>
                         <HelperTextItem variant="indeterminate">
