@@ -149,7 +149,7 @@ class AdminProvidersTable extends React.Component {
       onClick: (_event, rowId, rowData, extra) => console.log('clicked on Connect: ', instance),
     },
     {
-      title: <a href="https://www.patternfly.org">Link action</a>,
+      title: <a href="https://www.patternfly.org">Link action 2</a>,
     },
   ]
 
