@@ -54,6 +54,7 @@ import FormHeader from './form/formHeader'
 import InstanceListFilter from './instanceListFilter'
 import { handleCancel, handleTryAgain } from './instanceListPage'
 import './_dbaas-import-view.css'
+import AdminProvidersTable from './adminProvidersTable'
 
 const AdminDashboard = () => {
   const [noInstances, setNoInstances] = useState(false)
@@ -263,12 +264,22 @@ const AdminDashboard = () => {
         console.log('filteredInventories')
         console.log(filteredInventories)
         filteredInventories.forEach((inventory, index) => {
-          const obj = { id: 0, name: '', namespace: '', instances: [], status: {}, providername: '', alert: '' }
+          const obj = {
+            id: 0,
+            name: '',
+            namespace: '',
+            instances: [],
+            status: {},
+            providername: '',
+            importdate: '',
+            alert: '',
+          }
           obj.id = index
           obj.name = inventory.metadata?.name
           obj.namespace = inventory.metadata?.namespace
           obj.status = inventory.status
           obj.providername = inventory.spec?.providerRef?.name
+          obj.importdate = inventory.metadata?.creationTimestamp
 
           let inventoryReadyCondition = inventory?.status?.conditions?.find(
             (condition) => condition.type?.toLowerCase() === 'inventoryready'
@@ -295,6 +306,8 @@ const AdminDashboard = () => {
           }
         })
       }
+      console.log('inventoriesAll')
+      console.log(inventoriesAll)
       setInventories(inventoriesAll)
       setInitialLanding(false)
     }
@@ -442,14 +455,15 @@ const AdminDashboard = () => {
                       textInputNameValue={textInputNameValue}
                       setTextInputNameValue={setTextInputNameValue}
                     />
-                    {/* <FormSection fullWidth flexLayout className="no-top-margin"> */}
-                    {/*   <AdminConnectionsTable */}
-                    {/*     filteredInstances={filteredInstances} */}
-                    {/*     dBaaSOperatorNameWithVersion={dBaaSOperatorNameWithVersion} */}
-                    {/*     inventoryInstances={inventoryInstances} */}
-                    {/*     noInstances={noInstances} */}
-                    {/*   /> */}
-                    {/* </FormSection> */}
+                    <FormSection fullWidth flexLayout className="no-top-margin">
+                      <AdminProvidersTable
+                        //filteredInstances={filteredInstances}
+                        dBaaSOperatorNameWithVersion={dBaaSOperatorNameWithVersion}
+                        //inventoryInstances={inventoryInstances}
+                        noInstances={noInstances}
+                        inventories={inventories}
+                      />
+                    </FormSection>
                   </TabContent>
                   <TabContent
                     key={1}
