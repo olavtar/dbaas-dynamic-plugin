@@ -10,6 +10,8 @@ import {
   InnerScrollContainer,
   sortable,
   SortByDirection,
+  ActionsColumn,
+  fitContent,
 } from '@patternfly/react-table'
 import _ from 'lodash'
 import React from 'react'
@@ -30,6 +32,7 @@ class AdminConnectionsTable extends React.Component {
         { title: 'Bound', transforms: [wrappable, cellWidth(10)] },
         { title: 'User', transforms: [wrappable, cellWidth(15)] },
         { title: 'Application', transforms: [wrappable, cellWidth(15)] },
+        { title: '', transforms: [fitContent] },
       ],
       rows: [],
       dBaaSOperatorNameWithVersion: this.props.dBaaSOperatorNameWithVersion,
@@ -153,6 +156,9 @@ class AdminConnectionsTable extends React.Component {
                 ))}
               </List>
             </React.Fragment>,
+            <React.Fragment>
+              <ActionsColumn items={this.defaultItems(inventoryInstance)} />
+            </React.Fragment>,
           ],
         })
       })
@@ -181,6 +187,16 @@ class AdminConnectionsTable extends React.Component {
     }
     this.setState({ rows: rowList })
   }
+
+  defaultItems = (instance) => [
+    {
+      title: 'Connect to application',
+      onClick: (_event, rowId, rowData, extra) => console.log('clicked on Connect: ', instance),
+    },
+    {
+      title: <a href="https://www.patternfly.org">Link action</a>,
+    },
+  ]
 
   render() {
     const { columns, rows, sortBy } = this.state

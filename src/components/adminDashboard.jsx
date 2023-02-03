@@ -13,9 +13,15 @@ import {
   EmptyStateSecondaryActions,
   FormSection,
   Label,
+  PageSection,
+  PageSectionVariants,
   Spinner,
   Split,
   SplitItem,
+  Tab,
+  TabContent,
+  Tabs,
+  TabTitleText,
   Title,
 } from '@patternfly/react-core'
 import CaretDownIcon from '@patternfly/react-icons/dist/esm/icons/caret-down-icon'
@@ -67,6 +73,8 @@ const AdminDashboard = () => {
   const [retrieve, setRetrieve] = useState(true)
   const [initialLanding, setInitialLanding] = useState(true)
 
+  const [activeTabKey, setActiveTabKey] = React.useState(0)
+
   const currentNS = window.location.pathname.split('/')[3]
 
   const filteredInstances = React.useMemo(
@@ -100,6 +108,11 @@ const AdminDashboard = () => {
       Database Access <Label className="ocs-preview-badge extra-left-margin">Service Preview</Label>
     </div>
   )
+
+  // Toggle currently active tab
+  const handleTabClick = (event, tabIndex) => {
+    setActiveTabKey(tabIndex)
+  }
 
   const mapDBaaSConnectionsAndServiceBindings = async () => {
     const newDbaasConnectionList = dbaasConnectionList
@@ -247,6 +260,8 @@ const AdminDashboard = () => {
           inventoryData.inventoryList,
           (inventory) => inventory.status?.databaseServices !== undefined
         )
+        console.log('filteredInventories')
+        console.log(filteredInventories)
         filteredInventories.forEach((inventory, index) => {
           const obj = { id: 0, name: '', namespace: '', instances: [], status: {}, providername: '', alert: '' }
           obj.id = index
@@ -299,6 +314,8 @@ const AdminDashboard = () => {
 
   const fetchCSV = async (currentNS = '') => {
     let dbaasCSV = await fetchDbaasCSV(currentNS, DBaaSOperatorName)
+    console.log('fetchCSV')
+    console.log(dbaasCSV)
     if (!_.isEmpty(dbaasCSV)) {
       setDBaaSOperatorNameWithVersion(dbaasCSV?.metadata?.name)
       setInstallNamespace(dbaasCSV?.metadata?.annotations['olm.operatorNamespace'])
@@ -389,41 +406,72 @@ const AdminDashboard = () => {
               displayInstancesFailed()
             ) : (
               <>
-                <Split>
-                  <SplitItem isFilled>
-                    <FormHeader
-                      title={dbProviderTitle}
-                      helpText="Create and view database instances, or import a database provider account."
-                      marginBottom="lg"
-                    />
-                  </SplitItem>
-                  <SplitItem>
-                    <Dropdown
-                      onSelect={onSelect}
-                      position={DropdownPosition.right}
-                      toggle={
-                        <DropdownToggle onToggle={onToggle} toggleIndicator={CaretDownIcon} isPrimary id="toggle-id-4">
-                          Configure
-                        </DropdownToggle>
-                      }
-                      isOpen={isOpen}
-                      dropdownItems={dropdownItems}
-                    />
-                  </SplitItem>
-                </Split>
-                <Divider />
-                <InstanceListFilter
-                  textInputNameValue={textInputNameValue}
-                  setTextInputNameValue={setTextInputNameValue}
+                <FormHeader
+                  title={dbProviderTitle}
+                  helpText="Create and view database instances, or import a database provider account."
+                  marginBottom="lg"
                 />
-                <FormSection fullWidth flexLayout className="no-top-margin">
-                  <AdminConnectionsTable
-                    filteredInstances={filteredInstances}
-                    dBaaSOperatorNameWithVersion={dBaaSOperatorNameWithVersion}
-                    inventoryInstances={inventoryInstances}
-                    noInstances={noInstances}
-                  />
-                </FormSection>
+                <PageSection type="tabs" variant={PageSectionVariants.light} isWidthLimited>
+                  <Tabs
+                    activeKey={activeTabKey}
+                    onSelect={handleTabClick}
+                    usePageInsets
+                    id="open-tabs-example-tabs-list"
+                  >
+                    <Tab
+                      eventKey={0}
+                      title={<TabTitleText>Provider Accounts</TabTitleText>}
+                      tabContentId={`tabContent${0}`}
+                    />
+                    <Tab
+                      eventKey={1}
+                      title={<TabTitleText>Database Instances</TabTitleText>}
+                      tabContentId={`tabContent${1}`}
+                    />
+                  </Tabs>
+                </PageSection>
+                <PageSection isWidthLimited variant={PageSectionVariants.light}>
+                  <TabContent
+                    key={0}
+                    eventKey={0}
+                    id={`tabContent${0}`}
+                    activeKey={activeTabKey}
+                    hidden={0 !== activeTabKey}
+                  >
+                    <InstanceListFilter
+                      textInputNameValue={textInputNameValue}
+                      setTextInputNameValue={setTextInputNameValue}
+                    />
+                    {/* <FormSection fullWidth flexLayout className="no-top-margin"> */}
+                    {/*   <AdminConnectionsTable */}
+                    {/*     filteredInstances={filteredInstances} */}
+                    {/*     dBaaSOperatorNameWithVersion={dBaaSOperatorNameWithVersion} */}
+                    {/*     inventoryInstances={inventoryInstances} */}
+                    {/*     noInstances={noInstances} */}
+                    {/*   /> */}
+                    {/* </FormSection> */}
+                  </TabContent>
+                  <TabContent
+                    key={1}
+                    eventKey={1}
+                    id={`tabContent${1}`}
+                    activeKey={activeTabKey}
+                    hidden={1 !== activeTabKey}
+                  >
+                    <InstanceListFilter
+                      textInputNameValue={textInputNameValue}
+                      setTextInputNameValue={setTextInputNameValue}
+                    />
+                    <FormSection fullWidth flexLayout className="no-top-margin">
+                      <AdminConnectionsTable
+                        filteredInstances={filteredInstances}
+                        dBaaSOperatorNameWithVersion={dBaaSOperatorNameWithVersion}
+                        inventoryInstances={inventoryInstances}
+                        noInstances={noInstances}
+                      />
+                    </FormSection>
+                  </TabContent>
+                </PageSection>
               </>
             )}
           </>
