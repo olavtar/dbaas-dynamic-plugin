@@ -15,7 +15,17 @@ import {
 } from '@patternfly/react-table'
 import _ from 'lodash'
 import React from 'react'
-import { DBaaSInventoryCRName } from '../const'
+import {
+  cockroachdbProviderName,
+  cockroachdbProviderType,
+  crunchyProviderName,
+  crunchyProviderType,
+  DBaaSInventoryCRName,
+  mongoProviderName,
+  mongoProviderType,
+  rdsProviderName,
+  rdsProviderType,
+} from '../const'
 import './_dbaas-import-view.css'
 
 class AdminProvidersTable extends React.Component {
@@ -84,7 +94,8 @@ class AdminProvidersTable extends React.Component {
       data.forEach((inventory) => {
         rowList.push({
           cells: [
-            inventory.providername,
+            this.getProviderName(inventory.providername),
+            //inventory.providername,
             inventory.name,
             inventory.alert.length > 0 ? (
               <div>
@@ -143,15 +154,19 @@ class AdminProvidersTable extends React.Component {
     this.setState({ rows: rowList })
   }
 
-  defaultItems = (instance) => [
-    {
-      title: 'Connect to application',
-      onClick: (_event, rowId, rowData, extra) => console.log('clicked on Connect: ', instance),
-    },
-    {
-      title: <a href="https://www.patternfly.org">Link action 2</a>,
-    },
-  ]
+  getProviderName = (providerName) => {
+    let dbProvider
+    if (providerName === crunchyProviderType) {
+      dbProvider = crunchyProviderName
+    } else if (providerName === mongoProviderType) {
+      dbProvider = mongoProviderName
+    } else if (providerName === cockroachdbProviderType) {
+      dbProvider = cockroachdbProviderName
+    } else if (providerName === rdsProviderType) {
+      dbProvider = rdsProviderName
+    }
+    return dbProvider
+  }
 
   render() {
     const { columns, rows, sortBy } = this.state
