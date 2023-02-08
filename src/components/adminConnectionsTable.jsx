@@ -1,4 +1,20 @@
-import { EmptyState, EmptyStateVariant, List, ListItem, Popover, Title, EmptyStateBody } from '@patternfly/react-core'
+import {
+  EmptyState,
+  EmptyStateVariant,
+  List,
+  ListItem,
+  Popover,
+  Title,
+  EmptyStateBody,
+  ModalVariant,
+  FormGroup,
+  Form,
+  Modal,
+  Button,
+  TextInput,
+  FormSelect,
+  FormSelectOption,
+} from '@patternfly/react-core'
 import { ExclamationTriangleIcon } from '@patternfly/react-icons'
 import {
   cellWidth,
@@ -38,9 +54,11 @@ class AdminConnectionsTable extends React.Component {
       dBaaSOperatorNameWithVersion: this.props.dBaaSOperatorNameWithVersion,
       noInstances: this.props.noInstances,
       sortBy: {},
+      isConnectToAppModalOpen: false,
     }
     this.getRows = this.getRows.bind(this)
     this.onSort = this.onSort.bind(this)
+    this.handleConnectToAppModalToggle = this.handleConnectToAppModalToggle.bind(this)
   }
 
   componentDidMount() {
@@ -60,6 +78,13 @@ class AdminConnectionsTable extends React.Component {
         this.getRows(this.props.inventoryInstances)
       }
     }
+  }
+
+  handleConnectToAppModalToggle() {
+    console.log('handleConnectToAppModalToggle')
+    this.setState(({ isConnectToAppModalOpen }) => ({
+      isConnectToAppModalOpen: !isConnectToAppModalOpen,
+    }))
   }
 
   onSort = (_event, index, direction) => {
@@ -92,6 +117,8 @@ class AdminConnectionsTable extends React.Component {
     const genericAlert = 'Click on the link below for more information about this issue.'
     if (data && data.length > 0) {
       data.forEach((inventoryInstance) => {
+        console.log('inventoryInstance')
+        console.log(inventoryInstance.connections)
         rowList.push({
           cells: [
             inventoryInstance.serviceName,
@@ -191,19 +218,69 @@ class AdminConnectionsTable extends React.Component {
   defaultItems = (instance) => [
     {
       title: 'Connect to application',
-      onClick: (_event, rowId, rowData, extra) => console.log('clicked on Connect: ', instance),
-    },
-    {
-      title: <a href="https://www.patternfly.org">Link action</a>,
+      onClick: this.handleConnectToAppModalToggle,
     },
   ]
 
   render() {
-    const { columns, rows, sortBy } = this.state
+    const { columns, rows, sortBy, isConnectToAppModalOpen } = this.state
     const { inventoryInstances } = this.props
 
     return (
       <React.Fragment>
+        <Modal
+          variant={ModalVariant.small}
+          title="Connect to application"
+          description="Please select the application you wish to connect to."
+          isOpen={isConnectToAppModalOpen}
+          onClose={this.handleConnectToAppModalToggle}
+          actions={[
+            <Button
+              key="create"
+              variant="primary"
+              form="modal-with-form-form"
+              onClick={this.handleConnectToAppModalToggle}
+            >
+              Connect
+            </Button>,
+            <Button key="cancel" variant="link" onClick={this.handleConnectToAppModalToggle}>
+              Cancel
+            </Button>,
+          ]}
+        >
+          <Form id="modal-with-form-form">
+            <FormGroup label="Project" fieldId="project" isRequired>
+              <FormSelect
+                isRequired
+                // value={selectedInventory.name}
+                // onChange={handleInventorySelection}
+                aria-label="Project"
+              >
+                {/* {filteredInventories?.map((inventory, index) => ( */}
+                {/*     <FormSelectOption key={index} value={inventory.name} label={inventory.name} /> */}
+                {/* ))} */}
+              </FormSelect>
+            </FormGroup>
+            <FormGroup
+              label="Application"
+              fieldId="application"
+              isRequired
+              helperTextInvalid="This is a required field"
+            >
+              <FormSelect
+                isRequired
+                // value={selectedInventory.name}
+                // onChange={handleInventorySelection}
+                aria-label="Application"
+              >
+                {/* {filteredInventories?.map((inventory, index) => ( */}
+                {/*     <FormSelectOption key={index} value={inventory.name} label={inventory.name} /> */}
+                {/* ))} */}
+              </FormSelect>
+            </FormGroup>
+          </Form>
+        </Modal>
+
         <div className="sticky-table-container">
           <OuterScrollContainer>
             <InnerScrollContainer>

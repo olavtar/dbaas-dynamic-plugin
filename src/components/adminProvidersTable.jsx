@@ -86,8 +86,6 @@ class AdminProvidersTable extends React.Component {
   }
 
   getRows(data) {
-    console.log('getRows')
-    console.log(data)
     let rowList = []
     const genericAlert = 'Click on the link below for more information about this issue.'
     if (data && data.length > 0) {

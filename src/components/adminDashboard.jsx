@@ -451,10 +451,24 @@ const AdminDashboard = () => {
                     activeKey={activeTabKey}
                     hidden={0 !== activeTabKey}
                   >
-                    <InstanceListFilter
-                      textInputNameValue={textInputNameValue}
-                      setTextInputNameValue={setTextInputNameValue}
-                    />
+                    <Split>
+                      <SplitItem isFilled>
+                        <InstanceListFilter
+                          textInputNameValue={textInputNameValue}
+                          setTextInputNameValue={setTextInputNameValue}
+                        />
+                      </SplitItem>
+                      <SplitItem>
+                        <Button
+                          component="a"
+                          href={`/k8s/ns/${currentNS}/rhoda-admin-dashboard/import-provider-account`}
+                          isDisabled={allNamespaces}
+                          variant="primary"
+                        >
+                          Import Provider Account
+                        </Button>
+                      </SplitItem>
+                    </Split>
                     <FormSection fullWidth flexLayout className="no-top-margin">
                       <AdminProvidersTable
                         //filteredInstances={filteredInstances}
@@ -472,10 +486,24 @@ const AdminDashboard = () => {
                     activeKey={activeTabKey}
                     hidden={1 !== activeTabKey}
                   >
-                    <InstanceListFilter
-                      textInputNameValue={textInputNameValue}
-                      setTextInputNameValue={setTextInputNameValue}
-                    />
+                    <Split>
+                      <SplitItem isFilled>
+                        <InstanceListFilter
+                          textInputNameValue={textInputNameValue}
+                          setTextInputNameValue={setTextInputNameValue}
+                        />
+                      </SplitItem>
+                      <SplitItem>
+                        <Button
+                          component="a"
+                          href={`/k8s/ns/${currentNS}/rhoda-create-database-instance`}
+                          isDisabled={noProvisionableInstances}
+                          variant="primary"
+                        >
+                          Create Database Instance
+                        </Button>
+                      </SplitItem>
+                    </Split>
                     <FormSection fullWidth flexLayout className="no-top-margin">
                       <AdminConnectionsTable
                         filteredInstances={filteredInstances}
